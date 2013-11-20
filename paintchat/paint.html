@@ -1,0 +1,82 @@
+<html>
+<head>
+
+<style>
+    .topleft {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+    }
+</style>
+
+<script>
+    
+    function createCanvas(parent, width, height) {
+        var canvas = {};
+        canvas.node = document.createElement('canvas');
+        canvas.context = canvas.node.getContext('2d');
+        canvas.node.width = 500;
+        canvas.node.height = 500;
+        canvas.node.class = "topleft"
+        parent.appendChild(canvas.node);
+        return canvas;
+    }
+
+    function init(container, width, height, fillColor) {
+
+        var canvas = createCanvas(container, width, height);
+        var ctx = canvas.context;
+        
+        ctx.fillCircle = function(x, y, radius, fillColor) {
+            this.fillStyle = fillColor;
+            this.beginPath();
+            this.moveTo(x, y);
+            this.arc(x, y, radius, 0, Math.PI * 2, false);
+            this.fill();
+        };
+        
+        ctx.clearTo = function(fillColor) {
+            ctx.fillStyle = fillColor;
+            ctx.fillRect(0, 0, width, height);
+        };
+
+        ctx.clearTo(fillColor || "#ddd");
+
+        // bind mouse events
+        canvas.node.onmousemove = function(e) {
+            if(canvas.isDrawing){
+                var x = e.pageX - this.offsetLeft;
+                var y = e.pageY - this.offsetTop;
+                var radius = 10;
+                var fillColor = '#ff0000';
+                ws.send(x+' '+y+' '+radius+' '+fillColor);
+            }
+        };
+
+        canvas.node.onmousedown = function(e) { canvas.isDrawing = true; };
+        canvas.node.onmouseup = function(e) { canvas.isDrawing = false; };
+
+        ws = new WebSocket("ws://localhost:15013/");
+        ws.onopen = function() {}
+        ws.onclose = function() { alert('server shut down'); }
+
+        ws.onmessage = function(e) {
+            params = e.data.split(' ')
+            ctx.fillCircle(params[0], params[1], params[2], params[3]);
+        }
+    }
+
+    window.onload = function(){
+        var container = document.getElementById('canvasSpace');
+        init(container, 500, 500, '#ddd');
+    }
+
+</script>
+
+</head>
+<body>
+
+<div id="canvasSpace"></div>
+
+</body>
+</html>
