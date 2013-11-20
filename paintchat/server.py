@@ -4,7 +4,7 @@ from autobahn.websocket import WebSocketServerFactory, WebSocketServerProtocol, 
 
 clicks = 0;
 
-class ButtonProtocol(WebSocketServerProtocol):
+class PaintProtocol(WebSocketServerProtocol):
 
 	def onOpen(self):
 		self.factory.register(self)
@@ -17,7 +17,7 @@ class ButtonProtocol(WebSocketServerProtocol):
 		print msg
 		self.factory.updateAll(msg, binary)
 
-class ButtonFactory(WebSocketServerFactory):
+class PaintFactory(WebSocketServerFactory):
 
 	def __init__(self, url):
 		WebSocketServerFactory.__init__(self, url)
@@ -40,7 +40,7 @@ class ButtonFactory(WebSocketServerFactory):
 
 if __name__ == '__main__':
 	print 'server is running'
-	factory = ButtonFactory("ws://localhost:15013")
-	factory.protocol = ButtonProtocol
+	factory = PaintFactory("ws://localhost:15013")
+	factory.protocol = PaintProtocol
 	listenWS(factory)
 	reactor.run()

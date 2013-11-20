@@ -83,7 +83,6 @@
 
         ctx.clearTo(fillColor || "#ddd");
 
-        // bind mouse events
         canvas.node.onmousemove = function(e) {
             if(canvas.isDrawing){
                 var x = e.pageX - this.offsetLeft;
@@ -96,7 +95,6 @@
 
         canvas.node.onmousedown = function(e) { canvas.isDrawing = true; };
         canvas.node.onmouseup = function(e) { canvas.isDrawing = false; };
-
         button.node.onclick = function(e) { ws.send('command reset'); }
 
         ws = new WebSocket("ws://localhost:15013/");
@@ -109,10 +107,6 @@
                 ctx.clearTo("#ddd");
             else
                 ctx.fillCircle(params[0], params[1], params[2], params[3]);
-        }
-
-        function reset(){
-            alert('it worked');
         }
     }
 
@@ -127,8 +121,7 @@
 <body>
 
 <div id="canvasSpace"> </div>
-
-<div id='buttonSpace'> </div>
+<div id="buttonSpace"> </div>
 
 </body>
 </html>
