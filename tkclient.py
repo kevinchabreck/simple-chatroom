@@ -9,15 +9,15 @@ class TKChatClient(tk.Frame):
     self.createWidgets()
 
   def createWidgets(self):
-    self.output_window = tk.Text(self)
+    self.output_window = tk.Text(self, height=40)
     self.output_window.insert(tk.END, "output window")
     self.output_window.grid()
     
-    self.input_window = tk.Text(self)
+    self.input_window = tk.Text(self, height=5)
     self.input_window.insert(tk.END, "input window")
     self.input_window.grid()
 
-    self.users_window = tk.Text(self)
+    self.users_window = tk.Text(self, height=5)
     self.users_window.insert(tk.END, "users window")
     self.users_window.grid()
 
