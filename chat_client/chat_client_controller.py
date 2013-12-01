@@ -1,11 +1,16 @@
+#!/usr/bin/env python
+import socket
+import sys
 class ChatClientController():
-  def __init__(self, socket, view=None):
-    '''
-       NOTE: make sure tkclient passes the socket param elese declare the socket locally
-    '''
-    self.socket = socket
-    self.view   = view
+  # NOTE: expecting the name to come from instantiation of this class from tkinter.py file
+  def __init__(self, name, view=None):
+    self.username    = name
+    self.view        = view
     self.RECV_BUFFER = 4096
+    self.socket      = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.socket.settimeout(2)
+    # NOTE: change the host and port accordingly, i.e this should be the same as the one used @ server side
+    self.establishConnection('127.0.0.1', 5555)
 
   def updateOutput(self):
     """
@@ -32,13 +37,12 @@ class ChatClientController():
 
     @return - the list of users
     """
+    # NOTE: assumin that the server will parse the request to get users in the format USERS:
     self.socket.send('USERS:')
-    users = self.socket.recv(self.socket.RECV_BUFFER)
-    # TODO: should rather be using some msg packing thing here to send and receive messages
-    # NOTE: assumed that the list of users returned by the server is a string with spaces to differentiate between the users
-    # eg. kevin shuchee julia    is the string returnred by the server when the client asked for 'USERS'
-    return users.split()
-    #return ["kevin", "shuchee", "julia"]
+    # NOTE: assuming that the list of users returned from the server is in the format username1 username2
+    # NOTE: well to have spaces differentiate between usernames is a really bad assumption :) should rather use a format like json
+    users = self.socket.recv(self.RECV_BUFFER)
+    return users.split(' ')
 
   def requestBuffer(self):
     """
@@ -46,18 +50,11 @@ class ChatClientController():
 
     @return - the buffer from the server.
     """
-    '''
-       NOTE: server should parse out the get request and not display the string get
-    '''
+    # NOTE: assuming that the server will parse the request to get messages in the format GET:
     self.socket.send('GET:')
-    reqBuf = self.socket.recv(self.RECV_BUFFER)
-    '''
-       TODO: this has to be a tuple of username and the msg
-    '''
-    return [('username', reqBuf)]
-
-    #return [("julia", "Hi Everyone"), ("shuchee", "Hi")]
-
+    # NOTE: assuming the server will return messages in this format username: message
+    reqBuff = self.socket.recv(self.RECV_BUFFER)
+    return [(reqBuff)]
 
   def sendMessage(self, message):
     """
@@ -65,23 +62,27 @@ class ChatClientController():
 
     @return void?
     """
+    # NOTE: this method should be called from the tkinter.py file after the user submits a message from the message window
+    # NOTE: assuming that the server will parse the message in this format PUT:message
     self.socket.send('PUT:' + message)
 
-
-  def establishConnection(self, server, port, username):
-    # TODO: assumed that the port no. will be provided as the second param to this method
+  def establishConnection(self, server, port):
     """
     Establishes a connection with the given server and username.
 
     @return true if successful, false otherwise.
     """
-    self.socket.connect((server, port))
-    self.socket.send('USERNAME ' + username)
-    # assuming that the server returns a string 'true' on a successful conn
-    # if server never returned anything on a successfull conn, then the client will just sit here in limbo mode
-    msgFromServer = self.socket.recv(self.RECV_BUFFER)
-    if msgFromServer.lower() != 'true':
-      print msgFromServer
-      return False
-
+    try :
+        self.socket.connect((server, port))
+        # lets send the username to the server so server can tell us whether we can start the chat or not
+        # NOTE: assuming that the server will parse username in this format USERNAME:username
+        self.socket.send('USERNAME:' + self.username)
+        connMsg = self.socket.recv(self.RECV_BUFFER)
+        # NOTE: assuming that the server will return a message 'true' for a successful conn based on a unique username
+        if 'true' not in connMsg:
+            print connMsg
+            sys.exit()
+    except Exception, e:
+        print 'Unable to connect', str(e)
+        sys.exit()
     return True
