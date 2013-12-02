@@ -7,6 +7,7 @@ clicks = 0;
 class PaintProtocol(WebSocketServerProtocol):
 
 	def onOpen(self):
+		self.factory.sendPaintBuffer(self)
 		self.factory.register(self)
 
 	def connectionLost(self, reason):
@@ -17,11 +18,13 @@ class PaintProtocol(WebSocketServerProtocol):
 		print msg
 		self.factory.updateAll(msg, binary)
 
+
 class PaintFactory(WebSocketServerFactory):
 
 	def __init__(self, url):
 		WebSocketServerFactory.__init__(self, url)
 		self.clients = []
+		self.PAINTBUFFER = []
 
 	def register(self, client):
 		if not client in self.clients:
@@ -34,9 +37,13 @@ class PaintFactory(WebSocketServerFactory):
 			self.clients.remove(client)
 
 	def updateAll(self, msg, binary):
+		PAINTBUFFER.append(msg)
 		for c in self.clients:
 			c.sendMessage(msg, binary)
 			print "update *"+msg+"* sent to " + c.peerstr
+
+	def sendPaintBuffer(self, client):
+		client.sendMessage('BUFFER ' + json.dumps(PAINTBUFFER))
 
 if __name__ == '__main__':
 	print 'server is running'

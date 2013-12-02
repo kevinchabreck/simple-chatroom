@@ -2,118 +2,120 @@
 <head>
 
 <style>
-    
-    .topleft {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-    }
+	
+	.topleft {
+		position: fixed;
+		top: 20px;
+		left: 20px;
+	}
 
-    #reset {
-        background-color: #ccc;
-        -moz-border-radius: 10px;
-        -webkit-border-radius: 10px;
-        border-radius:6px;
-        color: #fff;
-        font-family: 'Helvetica';
-        font-size: 20px;
-        text-decoration: none;
-        cursor: poiner;
-        border:none; 
-        height:50px; 
-        width:100px;
-        top: 25%; 
-    }
+	#reset {
+		background-color: #ccc;
+		-moz-border-radius: 10px;
+		-webkit-border-radius: 10px;
+		border-radius:6px;
+		color: #fff;
+		font-family: 'Helvetica';
+		font-size: 20px;
+		text-decoration: none;
+		cursor: poiner;
+		border:none; 
+		height:50px; 
+		width:100px;
+		top: 25%; 
+	}
 
-    #reset:hover {
-        border: none;
-        background:red;
-        box-shadow: 0px 0px 1px #777; 
-    }
+	#reset:hover {
+		border: none;
+		background:red;
+		box-shadow: 0px 0px 1px #777; 
+	}
 
-    #buttonSpace{
-        width: 500px;
-        text-align: center;
-        margin-top:1em;
-    }
+	#buttonSpace{
+		width: 500px;
+		text-align: center;
+		margin-top:1em;
+	}
 
 </style>
 
 <script>
-    
-    function createCanvas(parent, width, height) {
-        var canvas = {};
-        canvas.node = document.createElement('canvas');
-        canvas.context = canvas.node.getContext('2d');
-        canvas.node.width = 500;
-        canvas.node.height = 500;
-        canvas.node.class = "topleft"
-        parent.appendChild(canvas.node);
-        return canvas;
-    }
+	
+	function createCanvas(parent, width, height) {
+		var canvas = {};
+		canvas.node = document.createElement('canvas');
+		canvas.context = canvas.node.getContext('2d');
+		canvas.node.width = 500;
+		canvas.node.height = 500;
+		canvas.node.class = "topleft"
+		parent.appendChild(canvas.node);
+		return canvas;
+	}
 
-    function createButton(parent){
-        var button = {};
-        button.node = document.createElement('input');
-        button.node.type = 'submit';
-        button.node.id = 'reset';
-        button.node.value = "Reset!";
-        parent.appendChild(button.node)
-        return button;
-    }
+	function createButton(parent){
+		var button = {};
+		button.node = document.createElement('input');
+		button.node.type = 'submit';
+		button.node.id = 'reset';
+		button.node.value = "Reset!";
+		parent.appendChild(button.node)
+		return button;
+	}
 
-    function init(container, width, height, fillColor) {
+	function init(container, width, height, fillColor) {
 
-        var canvas = createCanvas(container, width, height);
-        var ctx = canvas.context;
-        var button = createButton(document.getElementById('buttonSpace'));
-        
-        ctx.fillCircle = function(x, y, radius, fillColor) {
-            this.fillStyle = fillColor;
-            this.beginPath();
-            this.moveTo(x, y);
-            this.arc(x, y, radius, 0, Math.PI * 2, false);
-            this.fill();
-        };
-        
-        ctx.clearTo = function(fillColor) {
-            ctx.fillStyle = fillColor;
-            ctx.fillRect(0, 0, width, height);
-        };
+		var canvas = createCanvas(container, width, height);
+		var ctx = canvas.context;
+		var button = createButton(document.getElementById('buttonSpace'));
+		
+		ctx.fillCircle = function(x, y, radius, fillColor) {
+			this.fillStyle = fillColor;
+			this.beginPath();
+			this.moveTo(x, y);
+			this.arc(x, y, radius, 0, Math.PI * 2, false);
+			this.fill();
+		};
+		
+		ctx.clearTo = function(fillColor) {
+			ctx.fillStyle = fillColor;
+			ctx.fillRect(0, 0, width, height);
+		};
 
-        ctx.clearTo(fillColor || "#ddd");
+		ctx.clearTo(fillColor || "#ddd");
 
-        canvas.node.onmousemove = function(e) {
-            if(canvas.isDrawing){
-                var x = e.pageX - this.offsetLeft;
-                var y = e.pageY - this.offsetTop;
-                var radius = 10;
-                var fillColor = '#ff0000';
-                ws.send(x+' '+y+' '+radius+' '+fillColor);
-            }
-        };
+		canvas.node.onmousemove = function(e) {
+			if(canvas.isDrawing){
+				var x = e.pageX - this.offsetLeft;
+				var y = e.pageY - this.offsetTop;
+				var radius = 10;
+				var fillColor = '#ff0000';
+				ws.send(x+' '+y+' '+radius+' '+fillColor);
+			}
+		};
 
-        canvas.node.onmousedown = function(e) { canvas.isDrawing = true; };
-        canvas.node.onmouseup = function(e) { canvas.isDrawing = false; };
-        button.node.onclick = function(e) { ws.send('command reset'); }
+		canvas.node.onmousedown = function(e) { canvas.isDrawing = true; };
+		canvas.node.onmouseup = function(e) { canvas.isDrawing = false; };
+		button.node.onclick = function(e) { ws.send('command reset'); }
 
-        ws = new WebSocket("ws://localhost:15013/");
-        ws.onopen = function() {}
-        ws.onclose = function() { alert('server shut down'); }
+		ws = new WebSocket("ws://localhost:15013/");
+		ws.onopen = function() {}
+		ws.onclose = function() { alert('server shut down'); }
 
-        ws.onmessage = function(e) {
-            params = e.data.split(' ');
-            if (params[1] == 'reset')
-                ctx.clearTo("#ddd");
-            else
-                ctx.fillCircle(params[0], params[1], params[2], params[3]);
-        }
-    }
+		ws.onmessage = function(e) {
+			params = e.data.split(' ');
+			if (params[1] == 'BUFFER ')
+				alert(e.data);
+			else if (params[1] == 'reset')
+				ctx.clearTo("#ddd");
+			else
+				ctx.fillCircle(params[0], params[1], params[2], params[3]);
+		}
+	}
 
-    window.onload = function(){
-        var container = document.getElementById('canvasSpace');
-        init(container, 500, 500, '#ddd');
-    }
+	window.onload = function(){
+		var container = document.getElementById('canvasSpace');
+		init(container, 500, 500, '#ddd');
+	}
 
 </script>
 
