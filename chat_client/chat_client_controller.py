@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import socket
 import sys
+import json
 class ChatClientController():
   # NOTE: expecting the name to come from instantiation of 
   # this class from tkinter.py file
@@ -12,7 +13,7 @@ class ChatClientController():
     self.socket.settimeout(2)
     # NOTE: change the host and port accordingly, i.e this 
     # should be the same as the one used @ server side
-    self.establishConnection('127.0.0.1', 5555)
+    self.establishConnection('127.0.0.1', 5000)
 
   def updateOutput(self):
     """
@@ -20,8 +21,10 @@ class ChatClientController():
 
     @return void
     """
+    print "Requesting Buffer"
     buf = self.requestBuffer()
     for message in buf:
+      print message
       self.view.appendMessage(message)
 
   def updateUsers(self):
@@ -47,7 +50,9 @@ class ChatClientController():
     # NOTE: well to have spaces differentiate between usernames is a 
     # really bad assumption :) should rather use a format like json
     users = self.socket.recv(self.RECV_BUFFER)
-    return users.split(' ')
+    users = json.loads(users)
+    print "Users: " + str(users)
+    return users
 
   def requestBuffer(self):
     """
@@ -61,13 +66,15 @@ class ChatClientController():
     # NOTE: assuming the server will return messages in this format 
     # username: message
     reqBuff = self.socket.recv(self.RECV_BUFFER)
-    return [(reqBuff)]
+    reqBuff = json.loads(reqBuff)
+    print "Buffer: " + str(reqBuff)
+    return reqBuff
 
   def sendMessage(self, message):
     """
     Sends a message to the server.
 
-    @return void?
+    @return void
     """
     # NOTE: this method should be called from the tkinter.py file 
     # after the user submits a message from the message window
@@ -91,7 +98,7 @@ class ChatClientController():
         connMsg = self.socket.recv(self.RECV_BUFFER)
         # NOTE: assuming that the server will return a message 'true' 
         # for a successful conn based on a unique username
-        if 'true' not in connMsg:
+        if 'connected' not in connMsg:
             print connMsg
             sys.exit()
     except Exception, e:

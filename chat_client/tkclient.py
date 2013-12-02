@@ -11,10 +11,17 @@ class TKChatClient(tk.Frame):
     self.grid()
     self.createWidgets()
 
+  def refresh(self):
+    print "Refreshing"
+    self.controller.updateOutput()
+    self.controller.updateUsers()
+    self.after(1000, self.refresh)
+
+
   def updateUsers(self, users_list):
     self.users_window.config(state=tk.NORMAL)
     self.users_window.delete(1.0, tk.END)
-    self.users_window.insert(tk.END, users_list)
+    self.users_window.insert(tk.END, ", ".join(users_list))
     self.users_window.config(state=tk.DISABLED)
 
 
@@ -25,9 +32,7 @@ class TKChatClient(tk.Frame):
 
   def createWidgets(self):
     self.output_window = tk.Text(self, height=30)
-    self.output_window.insert(tk.END, "output window")
     self.output_window.config(state=tk.DISABLED)
-    self.output_window.after(500, self.controller.updateOutput)
     self.output_window.grid()
     
     self.input_window = tk.Text(self, height=5)
@@ -35,17 +40,18 @@ class TKChatClient(tk.Frame):
     self.input_window.grid()
 
     self.users_window = tk.Text(self, height=5)
-    self.users_window.insert(tk.END, "users window")
-    self.users_window.after(500, self.controller.updateUsers)
     self.users_window.config(state=tk.DISABLED)
     self.users_window.grid()
+
+
 
 
 # Main method
 if __name__ == "__main__":
   name = sys.argv[1]
-  controller = ChatClientController()
+  controller = ChatClientController(name)
   app = TKChatClient(controller)
   controller.view = app
   app.master.title('%s\'s Chat Room' % name)
+  app.after(500, app.refresh)
   app.mainloop()

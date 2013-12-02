@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Tcp Chat server
 
 import socket, select, json
@@ -8,9 +9,9 @@ import socket, select, json
 ################################################################################
 
 # a client class, which contains a clients username and chat buffer
-class client():
+class Client():
 	def __init__(self, username):
-		self.buffer = ['welcome to the chat!']
+		self.buffer = ['welcome to the chat!\n']
 		self.username = username
 
 # updates all buffers with the recieved message
@@ -39,8 +40,9 @@ def handle_connection(server_socket):
 			client_socket.close()
 		else:
 			CONNECTIONS.append(client_socket)
-			CLIENTS[client_socket.getpeername()] = client(username)
+			CLIENTS[client_socket.getpeername()] = Client(username)
 			update_buffers(username + " entered room\n")
+			client_socket.send("connected")
 			print username + " connected"
 	else:
 		client_socket.send("bad handshake - no username provided")
@@ -63,11 +65,12 @@ def handle_client(client_socket):
 			sendUsers(client_socket)
 		else:
 			client_socket.send('bad request\nREQUEST: \n' + data)
-	except:
+	except socket.error, e:
+		traceback.print_exc
 		msg = "Client " + username + " is offline"
 		sock.close()
 		CONNECTIONS.remove(client_socket)
-		CLIENTS.remove(client_socket.getpeername())
+		del CLIENTS[client_socket.getpeername()]
 
 
 def getMessage(username, data):
@@ -78,9 +81,10 @@ def getMessage(username, data):
 def sendBuffer(client_socket):
 	buffer = CLIENTS[client_socket.getpeername()].buffer
 	client_socket.send(json.dumps(buffer))
+	CLIENTS[client_socket.getpeername()].buffer = []
 
 def sendUsers(client_socket):
-	users = [client.username for client in CLIENTS]
+	users = [client.username for client in CLIENTS.values()]
 	client_socket.send(json.dumps(users))
 
 if __name__ == "__main__":
@@ -97,6 +101,8 @@ if __name__ == "__main__":
 
 	# initialize server
 	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	# allows socket to be reused in TIME_WAIT state. Do not use in production
+	server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	server_socket.bind((HOST, PORT))
 	server_socket.listen(MAX_CONNNECTIONS)
 	CONNECTIONS.append(server_socket)
@@ -110,8 +116,14 @@ if __name__ == "__main__":
 			for sock in read_sockets:
 				if sock == server_socket:
 					handle_connection(sock)
-				elif sock in CLIENTS:
+				elif sock.getpeername() in CLIENTS.keys():
 					handle_client(sock)
+		
+		except socket.error:
+			sock.close()
+			CONNECTIONS.remove(sock)
+			# TODO: remove from CLIENTS
+
 	 	except KeyboardInterrupt:
 			# close server socket on ctrl + C
 			print '\nclosing server'
