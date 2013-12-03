@@ -1,6 +1,7 @@
 
 from twisted.internet import reactor
 from autobahn.websocket import WebSocketServerFactory, WebSocketServerProtocol, listenWS
+import json
 
 clicks = 0;
 
@@ -8,7 +9,6 @@ class PaintProtocol(WebSocketServerProtocol):
 
 	def onOpen(self):
 		self.factory.register(self)
-		#self.factory.sendPaintBuffer(self)
 
 	def connectionLost(self, reason):
 		WebSocketServerProtocol.connectionLost(self, reason)
@@ -16,7 +16,7 @@ class PaintProtocol(WebSocketServerProtocol):
 
 	def onMessage(self, data, binary):
 		print data
-		if data != 'GETBUFFER:':
+		if data != 'GETPAINTBUFFER:':
 			self.factory.updateBuffer(data)
 			self.factory.updateClients(data, binary)
 		else:
@@ -34,6 +34,7 @@ class PaintFactory(WebSocketServerFactory):
 		if not client in self.clients:
 			print "registered client " + client.peerstr
 			self.clients.append(client)
+			#self.sendPaintBuffer(client)
 
 	def unregister(self, client):
 		if client in self.clients:
@@ -49,10 +50,12 @@ class PaintFactory(WebSocketServerFactory):
 		if msg == 'RESET:':
 			self.PAINTBUFFER = []
 		else:
-			self.PAINTBUFFER.append(msg.replace('PAINT: ', ''))
+			self.PAINTBUFFER.append(msg.replace('PAINT:', ''))
+			print 'added ' + msg.replace('PAINT:', '') + ' to buffer'
 
 	def sendPaintBuffer(self, client):
-		client.sendMessage('BUFFER ' + json.dumps(self.PAINTBUFFER))
+		print 'sending paint buffer'
+		client.sendMessage('PAINTBUFFER:' + json.dumps(self.PAINTBUFFER))
 
 if __name__ == '__main__':
 	print 'server is running'

@@ -76,12 +76,12 @@
 			this.fill();
 		};
 		
-		ctx.clearTo = function(fillColor) {
-			ctx.fillStyle = fillColor;
+		ctx.clear = function() {
+			ctx.fillStyle = "#ddd";
 			ctx.fillRect(0, 0, width, height);
 		};
 
-		ctx.clearTo(fillColor || "#ddd");
+		ctx.clear();
 
 		canvas.node.onmousemove = function(e) {
 			if(canvas.isDrawing){
@@ -98,7 +98,7 @@
 		button.node.onclick = function(e) { ws.send('RESET:'); }
 
 		ws = new WebSocket("ws://localhost:15013/");
-		ws.onopen = function() {}
+		ws.onopen = function() { ws.send('GETPAINTBUFFER:'); }
 		ws.onclose = function() { alert('server shut down'); }
 
 		ws.onmessage = function(e) {
@@ -108,9 +108,14 @@
 				ctx.fillCircle(params[0], params[1], params[2], params[3]);
 			}
 			else if (params[0] == 'RESET')
-				ctx.clearTo("#ddd");
-			else if (params[0] == 'BUFFER')
-				alert(e.data);
+				ctx.clear();
+			else if (params[0] == 'PAINTBUFFER'){
+				paintbuffer = JSON.parse(params[1]);
+				for(var i in paintbuffer){
+					i = paintbuffer[i].split(' ');
+					ctx.fillCircle(i[0], i[1], i[2], i[3]);
+				}
+			}
 		}
 	}
 
