@@ -5,6 +5,8 @@ import sys
 from chat_client_controller import *
 
 class TKChatClient(tk.Frame):
+  INPUT_LIMIT = 100
+
   def __init__(self, controller, master=None):
     tk.Frame.__init__(self, master)
     self.controller = controller
@@ -35,17 +37,34 @@ class TKChatClient(tk.Frame):
     message = self.input_window.get(1.0, tk.END).strip()
     print "Sending message: '%s'" % message
     self.input_window.delete(1.0, tk.END)
+    self.input_window_chars = 0
     self.controller.sendMessage(message)
 
+  def limitInputSize(self, event):
+    print "Testing limiting"
+    message = self.input_window.get(1.0, tk.END).strip()
+    chars_in = len(message)
+    if chars_in > self.INPUT_LIMIT:
+      self.input_window.delete("%s-%dc" % (tk.INSERT, 
+        chars_in - self.INPUT_LIMIT), tk.INSERT)
+    # Boilerplate for the <<Modified>> virtual event
+    self.input_window.tk.call(self.input_window._w, 'edit', 'modified', 0)
+
+    
 
   def createWidgets(self):
     self.output_window = tk.Text(self, height=30)
     self.output_window.config(state=tk.DISABLED)
     self.output_window.grid()
     
+    initial_input_text = "Enter Text Here"
+    self.input_window_chars = len(initial_input_text)
     self.input_window = tk.Text(self, height=5)
-    self.input_window.insert(tk.END, "input window")
+    self.input_window.insert(tk.END, initial_input_text)
     self.input_window.bind("<Return>", self.sendMessage)
+    # Boilerplate for the <<Modified>> virtual event
+    self.input_window.tk.call(self.input_window._w, 'edit', 'modified', 0)
+    self.input_window.bind("<<Modified>>", self.limitInputSize)
     self.input_window.grid()
 
     self.users_window = tk.Text(self, height=5)
