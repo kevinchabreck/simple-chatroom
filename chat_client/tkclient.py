@@ -50,7 +50,16 @@ class TKChatClient(tk.Frame):
     # Boilerplate for the <<Modified>> virtual event
     self.input_window.tk.call(self.input_window._w, 'edit', 'modified', 0)
 
-    
+
+  def paintHandler(self, event):
+    center_x = event.x
+    center_y = event.y
+    radius = 10
+    color = "#00FF00"
+    # Tkinter's bounding box is the xy of the top left and bottom right
+    bbox = (center_x - radius, center_y - radius, 
+        center_x + radius, center_y + radius)
+    self.canvas.create_oval(bbox, fill = color, outline="")    
 
   def createWidgets(self):
     self.output_window = tk.Text(self, height=30)
@@ -70,6 +79,10 @@ class TKChatClient(tk.Frame):
     self.users_window = tk.Text(self, height=5)
     self.users_window.config(state=tk.DISABLED)
     self.users_window.grid()
+
+    self.canvas = tk.Canvas(self, width=500, height=500, bg="#ffffff")
+    self.canvas.bind("<1>", self.paintHandler)
+    self.canvas.grid(column=1, row=0, rowspan=3)
 
 
 # Main method
