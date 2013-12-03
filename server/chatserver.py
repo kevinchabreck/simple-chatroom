@@ -11,7 +11,7 @@ import socket, select, json
 # a client class, which contains a clients username and chat buffer
 class Client():
 	def __init__(self, username):
-		self.buffer = ['welcome to the chat!\n']
+		self.buffer = ['welcome to the chat!']
 		self.username = username
 
 # updates all buffers with the recieved message
@@ -41,7 +41,7 @@ def handle_connection(server_socket):
 		else:
 			CONNECTIONS.append(client_socket)
 			CLIENTS[client_socket.getpeername()] = Client(username)
-			update_buffers(username + " entered room\n")
+			update_buffers(username + " entered room")
 			client_socket.send("connected")
 			print username + " connected"
 	else:

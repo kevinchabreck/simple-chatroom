@@ -27,8 +27,16 @@ class TKChatClient(tk.Frame):
 
   def appendMessage(self, message_tuple):
     self.output_window.config(state=tk.NORMAL)
-    self.output_window.insert(tk.END, message_tuple)
+    self.output_window.insert(tk.END, message_tuple + "\n")
     self.output_window.config(state=tk.DISABLED)
+
+
+  def sendMessage(self, event):
+    message = self.input_window.get(1.0, tk.END).strip()
+    print "Sending message: '%s'" % message
+    self.input_window.delete(1.0, tk.END)
+    self.controller.sendMessage(message)
+
 
   def createWidgets(self):
     self.output_window = tk.Text(self, height=30)
@@ -37,13 +45,12 @@ class TKChatClient(tk.Frame):
     
     self.input_window = tk.Text(self, height=5)
     self.input_window.insert(tk.END, "input window")
+    self.input_window.bind("<Return>", self.sendMessage)
     self.input_window.grid()
 
     self.users_window = tk.Text(self, height=5)
     self.users_window.config(state=tk.DISABLED)
     self.users_window.grid()
-
-
 
 
 # Main method
