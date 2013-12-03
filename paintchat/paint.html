@@ -167,10 +167,12 @@
 		canvas.node.onmouseup = function(e) { canvas.isDrawing = false; };
 		resetButton.node.onclick = function(e) { ws.send('RESET:'); }
 		//sendButton.node.onclick = function(e) { sendText(); }
+		inputBox.node.onclick = function(e){ inputBox.node.placeholder = ''; }
 		inputBox.node.onkeypress = function(e) {
 			if (e.keyCode == 13)
 				sendText();
 		}
+
 
 		function sendText(e){
 			ws.send('CHAT:' + inputBox.node.value);
@@ -185,31 +187,37 @@
 		}
 		ws.onclose = function() { alert('server shut down'); }
 
+		// possible message headers: 
+		// CHAT, PAINT, RESET, ACCEPTED, DENIED,
+		// INFO, PAINTBUFFER
 		ws.onmessage = function(e) {
 			var params = e.data.split(':');
-			if (params[0] == 'PAINT'){
+			var header = params[0];
+			if (header == 'PAINT'){
 				params = params[1].split(' ')
 				ctx.fillCircle(params[0], params[1], params[2], params[3]);
 			}
-			else if(params[0] == 'CHAT'){
-				var msg = e.data.replace('CHAT:','');
+			else if((header == 'CHAT')||(header == 'INFO')){
+				var msg = e.data.replace(header+':','',1);
+				if (header == 'INFO')
+					msg = '<i>'+msg+'</i>';
 				var messageSpace = document.getElementById("messagesSpace");
 				messageSpace.innerHTML += msg + '</br></br>';
 				messageSpace.scrollTop = messageSpace.scrollHeight;
 				messageSpace.focus();
 			}
-			else if (params[0] == 'RESET'){
+			else if (header == 'RESET'){
 				ctx.clear();
 			}
-			else if (params[0] == 'ACCEPTED'){
+			else if (header == 'ACCEPTED'){
 				alert('welcome to the chat!');
 			}
-			else if (params[0] == 'DENIED'){
+			else if (header == 'DENIED'){
 				var reason = params[1];
 				var username = window.prompt("This username is unavailable\nReason: "+reason+"\nEnter different username");
 				ws.send('USERNAME:' + username);
 			}
-			else if (params[0] == 'PAINTBUFFER'){
+			else if (header == 'PAINTBUFFER'){
 				var paintbuffer = JSON.parse(params[1]);
 				for(var i in paintbuffer){
 					i = paintbuffer[i].split(' ');

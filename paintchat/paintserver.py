@@ -29,7 +29,8 @@ class PaintProtocol(WebSocketServerProtocol):
 			elif header == 'CHAT':
 				user = self.factory.CLIENTS[self]
 				data = data.replace('CHAT:','CHAT:'+user+' -> ', 1)
-			self.factory.updateClients(self, data, binary)
+			#self.factory.updateClients(self, data)
+			self.factory.updateClients(data)
 			
 
 
@@ -49,6 +50,9 @@ class PaintFactory(WebSocketServerFactory):
 	def registerClient(self, client, username):
 		if not client in self.CLIENTS.keys():
 			print "registered client " + username
+			#self.updateClients(client, msg)
+			msg = 'INFO:{} has joined the chat'.format(username)
+			self.updateClients(msg)	
 			self.CLIENTS[client] = username
 
 	def unregister(self, client):
@@ -57,11 +61,14 @@ class PaintFactory(WebSocketServerFactory):
 			self.CONNECTIONS.remove(client)
 		if client in self.CLIENTS.keys():
 			print "unregistered CLIENT " + self.CLIENTS[client]
+			msg = 'INFO:{} has left the chat'.format(self.CLIENTS[client])
+			self.updateClients(msg)	
 			del self.CLIENTS[client]
 
-	def updateClients(self, client, msg, binary):
+	#def updateClients(self, client, msg):
+	def updateClients(self, msg):
 		for c in self.CONNECTIONS:
-			c.sendMessage(msg, binary)
+			c.sendMessage(msg)
 			print "update *"+msg+"* sent to " + c.peerstr
 
 	def checkName(self, client, username):
