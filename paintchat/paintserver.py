@@ -17,7 +17,8 @@ class PaintProtocol(WebSocketServerProtocol):
 	def onMessage(self, data, binary):
 		print data
 		if data != 'GETPAINTBUFFER:':
-			self.factory.updateBuffer(data)
+			if data.split(':')[0] != 'CHAT':
+				self.factory.updateBuffer(data)
 			self.factory.updateClients(data, binary)
 		else:
 			self.factory.sendPaintBuffer(self)
