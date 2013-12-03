@@ -12,7 +12,13 @@ import socket, select, json, sys
 class Client():
 	def __init__(self, username):
 		self.buffer = ['welcome to the chat!']
+		self.canvas_buffer = []
 		self.username = username
+
+def update_canvas_buffers(canvas_message):
+	for client in CLIENTS:
+		CLIENTS[client].canvas_buffer.append(canvas_message)
+		
 
 # updates all buffers with the recieved message
 def update_buffers(message):
@@ -58,8 +64,12 @@ def handle_client(client_socket):
 	type = data.split(':')[0]
 	if type == 'PUT':
 		getMessage(username, data)
+	elif type == 'CPUT':
+		getCanvasMessage(username, data)
 	elif type == 'GET':
 		sendBuffer(client_socket)
+	elif type == 'CGET':
+		sendCanvasBuffer(client_socket)
 	elif type == 'USERS':
 		sendUsers(client_socket)
 	else:
@@ -71,10 +81,20 @@ def getMessage(username, data):
 	print msg
 	update_buffers(msg)
 
+def getCanvasMessage(username, data):
+	msg = data.replace('CPUT:', '', 1)
+	update_canvas_buffers(msg)
+
 def sendBuffer(client_socket):
 	buffer = CLIENTS[client_socket].buffer
 	client_socket.send(json.dumps(buffer))
 	CLIENTS[client_socket].buffer = []
+
+def sendCanvasBuffer(client_socket):
+	canvas_buffer = CLIENTS[client_socket].canvas_buffer
+	client_socket.send(json.dumps(canvas_buffer))
+	CLIENTS[client_socket].canvas_buffer = []
+	
 
 def sendUsers(client_socket):
 	users = [client.username for client in CLIENTS.values()]

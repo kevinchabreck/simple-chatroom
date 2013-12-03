@@ -17,6 +17,7 @@ class TKChatClient(tk.Frame):
     print "Refreshing"
     self.controller.updateOutput()
     self.controller.updateUsers()
+    self.controller.updateCanvas()
     self.after(1000, self.refresh)
 
 
@@ -27,10 +28,22 @@ class TKChatClient(tk.Frame):
     self.users_window.config(state=tk.DISABLED)
 
 
-  def appendMessage(self, message_tuple):
+  def appendMessage(self, message):
     self.output_window.config(state=tk.NORMAL)
-    self.output_window.insert(tk.END, message_tuple + "\n")
+    self.output_window.insert(tk.END, message + "\n")
     self.output_window.config(state=tk.DISABLED)
+
+  def appendCanvasMessage(self, message_tuple):
+    center_x = int(message_tuple[0])
+    center_y = int(message_tuple[1])
+    radius = int(message_tuple[2])
+    color = message_tuple[3]
+
+    # Tkinter's bounding box is the xy of the top left and bottom right
+    bbox = (center_x - radius, center_y - radius, 
+        center_x + radius, center_y + radius)
+    self.canvas.create_oval(bbox, fill = color, outline="")    
+
 
 
   def sendMessage(self, event):
@@ -56,10 +69,8 @@ class TKChatClient(tk.Frame):
     center_y = event.y
     radius = 10
     color = "#00FF00"
-    # Tkinter's bounding box is the xy of the top left and bottom right
-    bbox = (center_x - radius, center_y - radius, 
-        center_x + radius, center_y + radius)
-    self.canvas.create_oval(bbox, fill = color, outline="")    
+
+    self.controller.sendCanvasMessage(center_x, center_y, radius, color)
 
   def createWidgets(self):
     self.output_window = tk.Text(self, height=30)

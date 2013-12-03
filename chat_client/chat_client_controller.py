@@ -29,6 +29,12 @@ class ChatClientController():
       print message
       self.view.appendMessage(message)
 
+  def updateCanvas(self):
+    buf = self.requestCanvasBuffer()
+    for message in buf:
+      message = message.split(" ")
+      self.view.appendCanvasMessage(message)
+
   def updateUsers(self):
     """
     Refreshes the users list.
@@ -72,6 +78,13 @@ class ChatClientController():
     print "Buffer: " + str(reqBuff)
     return reqBuff
 
+  def requestCanvasBuffer(self):
+    self.socket.send('CGET:')
+    reqBuff = self.socket.recv(self.RECV_BUFFER)
+    reqBuff = json.loads(reqBuff)
+    print "Buffer: " + str(reqBuff)
+    return reqBuff
+
   def sendMessage(self, message):
     """
     Sends a message to the server.
@@ -83,6 +96,9 @@ class ChatClientController():
     # NOTE: assuming that the server will parse the message in this 
     # format PUT:message
     self.socket.send('PUT:' + message)
+
+  def sendCanvasMessage(self, x, y, radius, color):
+    self.socket.send('CPUT:%d %d %d %s' % (x, y, radius, color))
 
   def establishConnection(self, server, port):
     """
