@@ -8,44 +8,70 @@ clicks = 0;
 class PaintProtocol(WebSocketServerProtocol):
 
 	def onOpen(self):
-		self.factory.register(self)
+		self.factory.registerConnection(self)
 
 	def connectionLost(self, reason):
 		WebSocketServerProtocol.connectionLost(self, reason)
 		self.factory.unregister(self)
 
+	# possible message headers:
+	# PAINT, CHAT, RESET, USERNAME, GETPAINTBUFFER
 	def onMessage(self, data, binary):
 		print data
-		if data != 'GETPAINTBUFFER:':
-			if data.split(':')[0] != 'CHAT':
-				self.factory.updateBuffer(data)
-			self.factory.updateClients(data, binary)
-		else:
+		header = data.split(':')[0]
+		if header == 'GETPAINTBUFFER':
 			self.factory.sendPaintBuffer(self)
+		elif header == 'USERNAME':
+			self.factory.checkName(self, data.replace('USERNAME:','',1))
+		else:
+			if header == 'PAINT' or header == 'RESET':
+				self.factory.updateBuffer(data)
+			elif header == 'CHAT':
+				user = self.factory.CLIENTS[self]
+				data = data.replace('CHAT:','CHAT:'+user+' -> ', 1)
+			self.factory.updateClients(self, data, binary)
+			
 
 
 class PaintFactory(WebSocketServerFactory):
 
 	def __init__(self, url):
 		WebSocketServerFactory.__init__(self, url)
-		self.clients = []
+		self.CONNECTIONS = []
+		self.CLIENTS = {}
 		self.PAINTBUFFER = []
 
-	def register(self, client):
-		if not client in self.clients:
-			print "registered client " + client.peerstr
-			self.clients.append(client)
-			#self.sendPaintBuffer(client)
+	def registerConnection(self, client):
+		if not client in self.CONNECTIONS:
+			print "registered connection " + client.peerstr
+			self.CONNECTIONS.append(client)
+
+	def registerClient(self, client, username):
+		if not client in self.CLIENTS.keys():
+			print "registered client " + username
+			self.CLIENTS[client] = username
 
 	def unregister(self, client):
-		if client in self.clients:
-			print "unregistered client " + client.peerstr
-			self.clients.remove(client)
+		if client in self.CONNECTIONS:
+			print "unregistered CONNECTION " + client.peerstr
+			self.CONNECTIONS.remove(client)
+		if client in self.CLIENTS.keys():
+			print "unregistered CLIENT " + self.CLIENTS[client]
+			del self.CLIENTS[client]
 
-	def updateClients(self, msg, binary):
-		for c in self.clients:
+	def updateClients(self, client, msg, binary):
+		for c in self.CONNECTIONS:
 			c.sendMessage(msg, binary)
 			print "update *"+msg+"* sent to " + c.peerstr
+
+	def checkName(self, client, username):
+		if ':' in username:
+			client.sendMessage('DENIED:invalid character ":"')
+		elif username in self.CLIENTS.values():
+			client.sendMessage('DENIED:username in use')
+		else:
+			self.registerClient(client, username)
+			client.sendMessage('ACCEPTED:')
 
 	def updateBuffer(self, msg):
 		if msg == 'RESET:':
