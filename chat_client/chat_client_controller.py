@@ -3,6 +3,8 @@ import socket
 import sys
 import json
 class ChatClientController():
+  # TODO: Handle when the server closes.
+
   # NOTE: expecting the name to come from instantiation of 
   # this class from tkinter.py file
   def __init__(self, name, view=None):

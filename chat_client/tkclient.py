@@ -81,3 +81,5 @@ if __name__ == "__main__":
   app.master.title('%s\'s Chat Room' % name)
   app.after(500, app.refresh)
   app.mainloop()
+
+# TODO: Handle when the server closes.
