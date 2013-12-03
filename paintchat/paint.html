@@ -35,35 +35,44 @@
 	#buttonSpace{
 		width: 500px;
 		text-align: center;
-		margin-top:1em;
+		margin-top: 1em;
+	}
+
+	#canvasSpace{
+		margin-bottom:1em;
 	}
 
 	#chatSpace, #messagesSpace, #textEntrySpace{
 		width: 250px; 
 		background: #dddddd;
 		border-radius: 25px;
-		padding: 10px 0px;
 	}
 
 	#chatSpace{
 		height: 480px;
 		border: 2px solid #a1a1a1;
-		overflow-y: scroll;
 		float: left;
 	}
 
 	#messagesSpace{
 		height: 400px;
+		border: 2px solid #a1a1a1;
+		overflow-y: scroll;
 	}
 
 	#textEntrySpace{
-		border: 2px solid #ff0000;
-		height:45px;
+		//border: 2px solid #ff0000;
+		height: 45px;
 	}
 
 	#canvasSpace{
 		margin-right:10px;
 		float: left;
+	}
+
+	#inputBox{
+		resize: none;
+		//border: 2px solid #ff0000;
 	}
 
 </style>
@@ -92,8 +101,12 @@
 
 	function createInputBox(parent){
 		var textBox = {};
-		textBox.node = document.createElement('input');
-		textBox.node.type = 'text';
+		textBox.node = document.createElement('textarea');
+		//textBox.node.type = 'text';
+		textBox.node.rows = 5;
+		textBox.node.cols = 32;
+		wrap = "hard";
+		maxlength = 100;
 		textBox.node.id = 'inputBox';
 		parent.appendChild(textBox.node)
 		return textBox;
@@ -144,7 +157,13 @@
 		canvas.node.onmousedown = function(e) { canvas.isDrawing = true; };
 		canvas.node.onmouseup = function(e) { canvas.isDrawing = false; };
 		resetButton.node.onclick = function(e) { ws.send('RESET:'); }
-		sendButton.node.onclick = function(e) { 
+		sendButton.node.onclick = function(e) { sendText(); }
+		inputBox.node.onkeypress = function(e) {
+			if (e.keyCode == 13)
+				sendText();
+		}
+
+		function sendText(e){
 			ws.send('CHAT:' + inputBox.node.value);
 			inputBox.node.value = '';
 		}
@@ -187,7 +206,7 @@
 
 <div id="canvasSpace"> </div>
 <div id="chatSpace"> 
-	<div id="messagesSpace"> </div>
+	<div id="messagesSpace"> </br> </div>
 	<div id="textEntrySpace"> </div> 
 </div>
 <div id="buttonSpace"> </div>
