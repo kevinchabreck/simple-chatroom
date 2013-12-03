@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Tcp Chat server
 
-import socket, select, json
+import socket, select, json, sys
 
 ################################################################################
 # CURRENT CLIENTSIDE CONSTRAINTS:
@@ -11,7 +11,7 @@ import socket, select, json
 # a client class, which contains a clients username and chat buffer
 class Client():
 	def __init__(self, username):
-		self.buffer = ['welcome to the chat!\n']
+		self.buffer = ['welcome to the chat!']
 		self.username = username
 
 # updates all buffers with the recieved message
@@ -40,8 +40,8 @@ def handle_connection(server_socket):
 			client_socket.close()
 		else:
 			CONNECTIONS.append(client_socket)
-			CLIENTS[client_socket.getpeername()] = Client(username)
-			update_buffers(username + " entered room\n")
+			CLIENTS[client_socket] = Client(username)
+			update_buffers(username + " entered room")
 			client_socket.send("connected")
 			print username + " connected"
 	else:
@@ -53,24 +53,17 @@ def handle_connection(server_socket):
 # is discarded.
 def handle_client(client_socket):
 	print 'handling client'
-	username = CLIENTS[client_socket.getpeername()].username
-	try:
-		data = client_socket.recv(RECV_BUFFER)
-		type = data.split(':')[0]
-		if type == 'PUT':
-			getMessage(username, data)
-		elif type == 'GET':
-			sendBuffer(client_socket)
-		elif type == 'USERS':
-			sendUsers(client_socket)
-		else:
-			client_socket.send('bad request\nREQUEST: \n' + data)
-	except socket.error, e:
-		traceback.print_exc
-		msg = "Client " + username + " is offline"
-		sock.close()
-		CONNECTIONS.remove(client_socket)
-		del CLIENTS[client_socket.getpeername()]
+	username = CLIENTS[client_socket].username
+	data = client_socket.recv(RECV_BUFFER)
+	type = data.split(':')[0]
+	if type == 'PUT':
+		getMessage(username, data)
+	elif type == 'GET':
+		sendBuffer(client_socket)
+	elif type == 'USERS':
+		sendUsers(client_socket)
+	else:
+		client_socket.send('bad request\nREQUEST: \n' + data)
 
 
 def getMessage(username, data):
@@ -79,9 +72,9 @@ def getMessage(username, data):
 	update_buffers(msg)
 
 def sendBuffer(client_socket):
-	buffer = CLIENTS[client_socket.getpeername()].buffer
+	buffer = CLIENTS[client_socket].buffer
 	client_socket.send(json.dumps(buffer))
-	CLIENTS[client_socket.getpeername()].buffer = []
+	CLIENTS[client_socket].buffer = []
 
 def sendUsers(client_socket):
 	users = [client.username for client in CLIENTS.values()]
@@ -116,16 +109,19 @@ if __name__ == "__main__":
 			for sock in read_sockets:
 				if sock == server_socket:
 					handle_connection(sock)
-				elif sock.getpeername() in CLIENTS.keys():
+				elif sock in CLIENTS.keys():
 					handle_client(sock)
 		
 		except socket.error:
-			sock.close()
-			CONNECTIONS.remove(sock)
-			# TODO: remove from CLIENTS
+			if "sock" in vars() and sock in CLIENTS.keys():
+				update_buffers(CLIENTS[sock].username + " left the room")
+				CONNECTIONS.remove(sock)
+				del CLIENTS[sock]
+				sock.close()
 
 	 	except KeyboardInterrupt:
 			# close server socket on ctrl + C
 			print '\nclosing server'
 			server_socket.close()
 			print 'server closed'
+			sys.exit()
