@@ -89,13 +89,13 @@
 				var y = e.pageY - this.offsetTop;
 				var radius = 10;
 				var fillColor = '#ff0000';
-				ws.send(x+' '+y+' '+radius+' '+fillColor);
+				ws.send('PAINT: '+x+' '+y+' '+radius+' '+fillColor);
 			}
 		};
 
 		canvas.node.onmousedown = function(e) { canvas.isDrawing = true; };
 		canvas.node.onmouseup = function(e) { canvas.isDrawing = false; };
-		button.node.onclick = function(e) { ws.send('command reset'); }
+		button.node.onclick = function(e) { ws.send('RESET:'); }
 
 		ws = new WebSocket("ws://localhost:15013/");
 		ws.onopen = function() {}
@@ -103,12 +103,12 @@
 
 		ws.onmessage = function(e) {
 			params = e.data.split(' ');
-			if (params[1] == 'BUFFER ')
-				alert(e.data);
-			else if (params[1] == 'reset')
+			if (params[0] == 'PAINT:')
+				ctx.fillCircle(params[1], params[2], params[3], params[4]);
+			else if (params[0] == 'RESET:')
 				ctx.clearTo("#ddd");
-			else
-				ctx.fillCircle(params[0], params[1], params[2], params[3]);
+			else if (params[0] == 'BUFFER:')
+				alert(e.data);
 		}
 	}
 
