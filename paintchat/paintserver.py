@@ -8,6 +8,7 @@ class PaintProtocol(WebSocketServerProtocol):
 
 	def onOpen(self):
 		self.factory.register(self)
+		#self.factory.sendPaintBuffer(self)
 
 	def connectionLost(self, reason):
 		WebSocketServerProtocol.connectionLost(self, reason)
