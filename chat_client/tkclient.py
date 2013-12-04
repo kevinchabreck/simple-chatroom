@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import Tkinter as tk
-from Tkinter import *
 import tkFileDialog
 import tkMessageBox
 import sys
@@ -15,13 +14,23 @@ class TKChatClient(tk.Frame):
     self.controller = controller
     self.grid()
     self.createWidgets()
+    self.has_connection = True
+
+  def connection_lost(self):
+    title = "Connection Lost"
+    message = "Connection to server lost. Closing application."
+    self.has_connection = False
+    tkMessageBox.showerror(title, message)
+    sys.exit()
+
 
   def refresh(self):
-    print "Refreshing"
-    self.controller.updateOutput()
-    self.controller.updateUsers()
-    self.controller.updateCanvas()
-    self.after(1000, self.refresh)
+    if self.has_connection:
+      print "Refreshing"
+      self.controller.updateOutput()
+      self.controller.updateUsers()
+      self.controller.updateCanvas()
+      self.after(1000, self.refresh)
 
 
   def updateUsers(self, users_list):
@@ -98,8 +107,8 @@ class TKChatClient(tk.Frame):
     self.input_window.bind("<Return>", self.sendMessage)
 
     # file browse button
-    self.button = Button(self, text="Send file", command=self.sendFile, width=10)
-    self.button.grid(row=1, column=0, sticky=W)
+    self.button = tk.Button(self, text="Send file", command=self.sendFile, width=10)
+    self.button.grid(row=1, column=0, sticky=tk.W)
 
     # Boilerplate for the <<Modified>> virtual event
     self.input_window.tk.call(self.input_window._w, 'edit', 'modified', 0)
@@ -111,7 +120,7 @@ class TKChatClient(tk.Frame):
     self.users_window.grid()
 
     self.canvas = tk.Canvas(self, width=500, height=500, bg="#ffffff")
-    self.canvas.bind("<1>", self.paintHandler)
+    self.canvas.bind("<B1-Motion>", self.paintHandler)
     self.canvas.grid(column=1, row=0, rowspan=3)
 
 
@@ -119,10 +128,10 @@ class TKChatClient(tk.Frame):
 if __name__ == "__main__":
   name = sys.argv[1]
   controller = ChatClientController(name)
+
   app = TKChatClient(controller)
   controller.view = app
   app.master.title('%s\'s Chat Room' % name)
   app.after(500, app.refresh)
   app.mainloop()
 
-# TODO: Handle when the server closes.
