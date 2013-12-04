@@ -3,6 +3,7 @@ import socket
 import sys
 import os
 import json
+import base64
 
 def calls_socket(function):
   def inner(*args):
@@ -52,6 +53,7 @@ class ChatClientController():
           self.view.confirmFileTransfer(username, fileName)
           # if the user wants to save the file then lets save it
           fileData     = messageSplit [1].replace('fileDataEnd', '')
+          fileData = base64.decodestring(fileData)
           # Make the path if it doesn't exist
           filePath = os.path.dirname("./files/")
           if not os.path.exists(filePath):
@@ -158,6 +160,7 @@ class ChatClientController():
     filePointer = open(filePath, "rb")
     fileData = filePointer.read()
     filePointer.close()
+    fileData = base64.encodestring(fileData)
     # lets send the file name
     head, fileName = os.path.split(filePath)
     # lets send the data
