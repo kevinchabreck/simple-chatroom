@@ -3,9 +3,17 @@ import socket
 import sys
 import os
 import json
-class ChatClientController():
-  # TODO: Handle when the server closes.
 
+def calls_socket(function):
+  def inner(*args):
+    try:
+      return function(*args)
+    except socket.error, e:
+      args[0].view.connection_lost()
+      args[0].socket.close()
+  return inner
+
+class ChatClientController():
   # NOTE: expecting the name to come from instantiation of 
   # this class from tkinter.py file
   def __init__(self, name, view=None):
@@ -69,6 +77,7 @@ class ChatClientController():
     users = self.requestUsers()
     self.view.updateUsers(users)
 
+  @calls_socket
   def requestUsers(self):
     """
     Requests the users list from the server.
@@ -91,6 +100,7 @@ class ChatClientController():
     print "Users: " + str(users)
     return users
 
+  @calls_socket
   def requestBuffer(self):
     """
     Requests the buffer from the server.
@@ -111,6 +121,7 @@ class ChatClientController():
     print "Buffer: " + str(reqBuff)
     return reqBuff
 
+  @calls_socket
   def requestCanvasBuffer(self):
     self.socket.send('CGET:')
     reqBuff = self.socket.recv(self.RECV_BUFFER)
@@ -118,6 +129,7 @@ class ChatClientController():
     print "Buffer: " + str(reqBuff)
     return reqBuff
 
+  @calls_socket
   def sendMessage(self, message):
     """
     Sends a message to the server.
@@ -130,9 +142,11 @@ class ChatClientController():
     # format PUT:message
     self.socket.send('PUT:' + message)
 
+  @calls_socket
   def sendCanvasMessage(self, x, y, radius, color):
     self.socket.send('CPUT:%d %d %d %s ' % (x, y, radius, color))
 
+  @calls_socket
   def sendFile(self, filePath):
     """
     Sends a file to the server.
@@ -171,3 +185,6 @@ class ChatClientController():
         print 'Unable to connect', str(e)
         sys.exit()
     return True
+
+  def close(self):
+    self.socket.close()

@@ -14,13 +14,23 @@ class TKChatClient(tk.Frame):
     self.controller = controller
     self.grid()
     self.createWidgets()
+    self.has_connection = True
+
+  def connection_lost(self):
+    title = "Connection Lost"
+    message = "Connection to server lost. Closing application."
+    self.has_connection = False
+    tkMessageBox.showerror(title, message)
+    sys.exit()
+
 
   def refresh(self):
-    print "Refreshing"
-    self.controller.updateOutput()
-    self.controller.updateUsers()
-    self.controller.updateCanvas()
-    self.after(1000, self.refresh)
+    if self.has_connection:
+      print "Refreshing"
+      self.controller.updateOutput()
+      self.controller.updateUsers()
+      self.controller.updateCanvas()
+      self.after(1000, self.refresh)
 
 
   def updateUsers(self, users_list):
@@ -118,10 +128,10 @@ class TKChatClient(tk.Frame):
 if __name__ == "__main__":
   name = sys.argv[1]
   controller = ChatClientController(name)
+
   app = TKChatClient(controller)
   controller.view = app
   app.master.title('%s\'s Chat Room' % name)
   app.after(500, app.refresh)
   app.mainloop()
 
-# TODO: Handle when the server closes.
