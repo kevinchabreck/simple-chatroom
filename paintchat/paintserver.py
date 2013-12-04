@@ -21,20 +21,18 @@ class PaintProtocol(WebSocketServerProtocol):
 		header = data.split(':')[0]
 		if header == 'GETPAINTBUFFER':
 			self.factory.sendPaintBuffer(self)
-		elif header == 'GETUSERS':
-			self.factory.sendUserList(self)
 		elif header == 'USERNAME':
 			self.factory.checkName(self, data.replace('USERNAME:','',1))
-		else:
+		elif self in factory.CLIENTS.keys():
 			if header == 'PAINT' or header == 'RESET':
 				self.factory.updateBuffer(data)
 			elif header == 'CHAT':
 				user = self.factory.CLIENTS[self]
-				data = data.replace('CHAT:','CHAT:'+user+' -> ', 1)
-			#self.factory.updateClients(self, data)
+				data = data.replace('CHAT:','CHAT:'+user+': ', 1)
 			self.factory.updateClients(data)
+		else:
+			self.sendMessage('DENIED:unregistered user')
 			
-
 
 class PaintFactory(WebSocketServerFactory):
 
@@ -53,12 +51,10 @@ class PaintFactory(WebSocketServerFactory):
 		if not client in self.CLIENTS.keys():
 			self.CLIENTS[client] = username
 			print "registered client " + username
-			#self.updateClients(client, msg)
 			msg = 'INFO:{} has joined the chat'.format(username)
 			self.updateClients(msg)
 			userlist = 'USERS:' + json.dumps(self.CLIENTS.values())
 			self.updateClients(userlist)
-			#self.CLIENTS[client] = username
 
 	def unregister(self, client):
 		if client in self.CONNECTIONS:
@@ -72,9 +68,7 @@ class PaintFactory(WebSocketServerFactory):
 			self.updateClients(msg)
 			userlist = 'USERS:' + json.dumps(self.CLIENTS.values())
 			self.updateClients(userlist)
-			#del self.CLIENTS[client]
 
-	#def updateClients(self, client, msg):
 	def updateClients(self, msg):
 		for c in self.CONNECTIONS:
 			c.sendMessage(msg)
@@ -83,7 +77,11 @@ class PaintFactory(WebSocketServerFactory):
 	def checkName(self, client, username):
 		if ':' in username:
 			client.sendMessage('DENIED:invalid character ":"')
-		elif username in self.CLIENTS.values():
+		elif username.isspace() or username == '':
+			client.sendMessage('DENIED:username must have at least one alphanumeric char')
+		elif username == 'null' or username == 'undefined':
+			client.sendMessage('DENIED:username cannot be null or undefined')
+		elif username.lower() in [x.lower() for x in self.CLIENTS.values()]:
 			client.sendMessage('DENIED:username in use')
 		else:
 			self.registerClient(client, username)

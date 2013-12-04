@@ -145,13 +145,19 @@
 		var resetButton = createResetButton(document.getElementById('buttonSpace'));
 		var inputBox = createInputBox(document.getElementById('textEntrySpace'));
 		var username = null;
+		var oldX = null;
+		var oldY = null;
 		
-		ctx.fillCircle = function(x, y, radius, fillColor) {
-			this.fillStyle = fillColor;
+		ctx.draw = function(oX, oY, nX, nY, width, fillColor) {
+			this.strokeStyle = fillColor;
 			this.beginPath();
-			this.moveTo(x, y);
-			this.arc(x, y, radius, 0, Math.PI * 2, false);
-			this.fill();
+			this.moveTo(oX, oY);
+			this.lineTo(nX, nY);
+			this.closePath();
+			this.lineWidth = width;
+			this.stroke();
+			oldX = nX;
+			oldY = nY;
 		};
 		
 		ctx.clear = function() {
@@ -163,22 +169,26 @@
 
 		canvas.node.onmousemove = function(e) {
 			if(canvas.isDrawing){
-				var x = e.pageX - this.offsetLeft;
-				var y = e.pageY - this.offsetTop;
-				var radius = 10;
+				var newX = e.pageX - this.offsetLeft;
+				var newY = e.pageY - this.offsetTop;
+				var width = 5;
 				var fillColor = '#ff0000';
-				ws.send('PAINT:'+x+' '+y+' '+radius+' '+fillColor);
+				ws.send('PAINT:'+oldX+' '+oldY+' '+newX+' '+newY+' '+width+' '+fillColor);
 			}
 		};
 
-		canvas.node.onmousedown = function(e) { canvas.isDrawing = true; };
+		canvas.node.onmousedown = function(e) { 
+			oldX = e.pageX - this.offsetLeft;
+			oldY = e.pageY - this.offsetTop;
+			canvas.isDrawing = true; 
+		};
 		canvas.node.onmouseup = function(e) { canvas.isDrawing = false; };
-		resetButton.node.onclick = function(e) { ws.send('RESET:'); }
-		inputBox.node.onclick = function(e){ inputBox.node.placeholder = ''; }
+		resetButton.node.onclick = function(e) { ws.send('RESET:'); };
+		inputBox.node.onclick = function(e){ inputBox.node.placeholder = ''; };
 		inputBox.node.onkeypress = function(e) {
 			if (e.keyCode == 13)
 				sendText();
-		}
+		};
 
 		function sendText(e){
 			ws.send('CHAT:' + inputBox.node.value);
@@ -189,8 +199,8 @@
 		ws.onopen = function() { 
 			username = window.prompt("Enter your username");
 			ws.send('USERNAME:' + username);
-		}
-		ws.onclose = function() { alert('server shut down'); }
+		};
+		ws.onclose = function() { alert('server shut down'); };
 
 		// possible message headers: 
 		// CHAT, PAINT, RESET, ACCEPTED, DENIED, INFO, PAINTBUFFER, USERS
@@ -199,12 +209,14 @@
 			var header = params[0];
 			if (header == 'PAINT'){
 				params = params[1].split(' ')
-				ctx.fillCircle(params[0], params[1], params[2], params[3]);
+				ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
 			}
 			else if((header == 'CHAT')||(header == 'INFO')){
 				var msg = e.data.replace(header+':','',1);
 				if (header == 'INFO')
 					msg = '<i>'+msg+'</i>';
+				else if (header == 'CHAT')
+					msg = '<b>' + msg.replace(':','</b>:',1);
 				var messageSpace = document.getElementById("messagesSpace");
 				messageSpace.innerHTML += msg + '</br></br>';
 				messageSpace.scrollTop = messageSpace.scrollHeight;
@@ -217,14 +229,14 @@
 			}
 			else if (header == 'DENIED'){
 				var reason = params[1];
-				username = window.prompt("This username is unavailable\nReason: "+reason+"\nEnter different username");
+				username = window.prompt("Denied!\nReason: "+reason+"\nEnter new username");
 				ws.send('USERNAME:' + username);
 			}
 			else if (header == 'PAINTBUFFER'){
 				var paintbuffer = JSON.parse(params[1]);
 				for(var i in paintbuffer){
 					i = paintbuffer[i].split(' ');
-					ctx.fillCircle(i[0], i[1], i[2], i[3]);
+					ctx.draw(i[0], i[1], i[2], i[3], i[4], i[5]);
 				}
 			}
 			else if (header == 'USERS'){
@@ -237,7 +249,7 @@
 				}
 				userlistSpace.innerHTML = ul;
 			}
-		}
+		};
 	}
 
 	window.onload = function(){
