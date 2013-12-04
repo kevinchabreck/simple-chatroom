@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 import Tkinter as tk
+from Tkinter import *
+import tkFileDialog
+import tkMessageBox
 import sys
 from chat_client_controller import *
 
@@ -17,6 +20,7 @@ class TKChatClient(tk.Frame):
     print "Refreshing"
     self.controller.updateOutput()
     self.controller.updateUsers()
+    self.controller.updateCanvas()
     self.after(1000, self.refresh)
 
 
@@ -27,10 +31,22 @@ class TKChatClient(tk.Frame):
     self.users_window.config(state=tk.DISABLED)
 
 
-  def appendMessage(self, message_tuple):
+  def appendMessage(self, message):
     self.output_window.config(state=tk.NORMAL)
-    self.output_window.insert(tk.END, message_tuple + "\n")
+    self.output_window.insert(tk.END, message + "\n")
     self.output_window.config(state=tk.DISABLED)
+
+  def appendCanvasMessage(self, message_tuple):
+    center_x = int(message_tuple[0])
+    center_y = int(message_tuple[1])
+    radius = int(message_tuple[2])
+    color = message_tuple[3]
+
+    # Tkinter's bounding box is the xy of the top left and bottom right
+    bbox = (center_x - radius, center_y - radius, 
+        center_x + radius, center_y + radius)
+    self.canvas.create_oval(bbox, fill = color, outline="")    
+
 
 
   def sendMessage(self, event):
@@ -45,23 +61,46 @@ class TKChatClient(tk.Frame):
     message = self.input_window.get(1.0, tk.END).strip()
     chars_in = len(message)
     if chars_in > self.INPUT_LIMIT:
-      self.input_window.delete("%s-%dc" % (tk.INSERT, 
+      self.input_window.delete("%s-%dc" % (tk.INSERT,
         chars_in - self.INPUT_LIMIT), tk.INSERT)
     # Boilerplate for the <<Modified>> virtual event
     self.input_window.tk.call(self.input_window._w, 'edit', 'modified', 0)
 
-    
+  def paintHandler(self, event):
+    center_x = event.x
+    center_y = event.y
+    radius = 10
+    color = "#00FF00"
+
+    self.controller.sendCanvasMessage(center_x, center_y, radius, color)
+
+  def sendFile(self):
+    filePath = tkFileDialog.askopenfilename(filetypes=(("All files", "*.*"), ("Text files", "*.txt;*.text"), ("Image files", "*.jpg;*.jpeg;*.png;*.gif")))
+    self.controller.sendFile(filePath)
+
+  def confirmFileTransfer(self, username, fileName):
+    message = "User " + username + ' wants to share file ' + fileName + ' with you'
+    confirm = tkMessageBox.askquestion("Confirm", message, icon='info')
+    if confirm == 'yes':
+      return True
+    else:
+      return False
 
   def createWidgets(self):
     self.output_window = tk.Text(self, height=30)
     self.output_window.config(state=tk.DISABLED)
     self.output_window.grid()
-    
+
     initial_input_text = "Enter Text Here"
     self.input_window_chars = len(initial_input_text)
     self.input_window = tk.Text(self, height=5)
     self.input_window.insert(tk.END, initial_input_text)
     self.input_window.bind("<Return>", self.sendMessage)
+
+    # file browse button
+    self.button = Button(self, text="Send file", command=self.sendFile, width=10)
+    self.button.grid(row=1, column=0, sticky=W)
+
     # Boilerplate for the <<Modified>> virtual event
     self.input_window.tk.call(self.input_window._w, 'edit', 'modified', 0)
     self.input_window.bind("<<Modified>>", self.limitInputSize)
@@ -70,6 +109,10 @@ class TKChatClient(tk.Frame):
     self.users_window = tk.Text(self, height=5)
     self.users_window.config(state=tk.DISABLED)
     self.users_window.grid()
+
+    self.canvas = tk.Canvas(self, width=500, height=500, bg="#ffffff")
+    self.canvas.bind("<1>", self.paintHandler)
+    self.canvas.grid(column=1, row=0, rowspan=3)
 
 
 # Main method
@@ -81,3 +124,5 @@ if __name__ == "__main__":
   app.master.title('%s\'s Chat Room' % name)
   app.after(500, app.refresh)
   app.mainloop()
+
+# TODO: Handle when the server closes.
