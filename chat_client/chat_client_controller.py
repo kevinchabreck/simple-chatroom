@@ -59,6 +59,7 @@ class ChatClientController():
           filePointer = open(filePath + "/" + fileName, "wb")
           filePointer.write(fileData);
           filePointer.close()
+          self.view.appendMessage("File " + filePath + "/" + fileName + " downloaded")
       else:
         self.view.appendMessage(message)
 
