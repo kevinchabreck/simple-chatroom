@@ -2,6 +2,16 @@
 import socket
 import sys
 import json
+
+def calls_socket(function):
+  def inner(*args):
+    try:
+      return function(*args)
+    except socket.error, e:
+      args[0].view.connection_lost()
+      args[0].socket.close()
+  return inner
+
 class ChatClientController():
   # NOTE: expecting the name to come from instantiation of 
   # this class from tkinter.py file
@@ -36,6 +46,7 @@ class ChatClientController():
     users = self.requestUsers()
     self.view.updateUsers(users)
 
+  @calls_socket
   def requestUsers(self):
     """
     Requests the users list from the server.
@@ -50,10 +61,14 @@ class ChatClientController():
     # NOTE: well to have spaces differentiate between usernames is a 
     # really bad assumption :) should rather use a format like json
     users = self.socket.recv(self.RECV_BUFFER)
-    users = json.loads(users)
+    try:
+      users = json.loads(users)
+    except:
+      pass
     print "Users: " + str(users)
     return users
 
+  @calls_socket
   def requestBuffer(self):
     """
     Requests the buffer from the server.
@@ -66,10 +81,16 @@ class ChatClientController():
     # NOTE: assuming the server will return messages in this format 
     # username: message
     reqBuff = self.socket.recv(self.RECV_BUFFER)
-    reqBuff = json.loads(reqBuff)
+    try:
+      reqBuff = json.loads(reqBuff)
+    except:
+      pass
+
     print "Buffer: " + str(reqBuff)
     return reqBuff
 
+
+  @calls_socket
   def sendMessage(self, message):
     """
     Sends a message to the server.
@@ -105,3 +126,6 @@ class ChatClientController():
         print 'Unable to connect', str(e)
         sys.exit()
     return True
+
+  def close(self):
+    self.socket.close()
