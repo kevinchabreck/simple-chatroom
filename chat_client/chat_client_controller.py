@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import socket
 import sys
+import os
 import json
 class ChatClientController():
-  # NOTE: expecting the name to come from instantiation of 
+  # NOTE: expecting the name to come from instantiation of
   # this class from tkinter.py file
   def __init__(self, name, view=None):
     self.username    = name
@@ -11,7 +12,7 @@ class ChatClientController():
     self.RECV_BUFFER = 4096
     self.socket      = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.socket.settimeout(2)
-    # NOTE: change the host and port accordingly, i.e this 
+    # NOTE: change the host and port accordingly, i.e this
     # should be the same as the one used @ server side
     self.establishConnection('127.0.0.1', 5000)
 
@@ -24,8 +25,28 @@ class ChatClientController():
     print "Requesting Buffer"
     buf = self.requestBuffer()
     for message in buf:
-      print message
-      self.view.appendMessage(message)
+      # checking for files in this format @ 'FILE:' + fileName + 'fileDataBegin' + fileData + 'fileDataEnd'
+      if 'fileDataBegin' in message and 'fileDataEnd' in message:
+        # lets get the filename
+        messageSplit = message.split('FILE:') [1]
+        messageSplit = message.split('fileDataBegin')
+        fileName     = messageSplit [0]
+        username     = fileName.split('FILE:') [0]
+        username     = username.replace(':', '')
+        # lets avoid transfering files to self
+        if username.strip() == self.username.strip():
+          pass
+        else:
+          # lets ask the user if they wanna save this file
+          fileName     = fileName.split('FILE:') [1]
+          self.view.confirmFileTransfer(username, fileName)
+          # if the user wants to save the file then lets save it
+          fileData     = messageSplit [1].replace('fileDataEnd', '')
+          filePointer = open("./files/" + fileName, "wb")
+          filePointer.write(fileData);
+          filePointer.close()
+      else:
+        self.view.appendMessage(message)
 
   def updateUsers(self):
     """
@@ -42,15 +63,19 @@ class ChatClientController():
 
     @return - the list of users
     """
-    # NOTE: assumin that the server will parse the request to 
+    # NOTE: assumin that the server will parse the request to
     # get users in the format USERS:
     self.socket.send('USERS:')
-    # NOTE: assuming that the list of users returned from the server 
+    # NOTE: assuming that the list of users returned from the server
     # is in the format username1 username2
-    # NOTE: well to have spaces differentiate between usernames is a 
+    # NOTE: well to have spaces differentiate between usernames is a
     # really bad assumption :) should rather use a format like json
     users = self.socket.recv(self.RECV_BUFFER)
-    users = json.loads(users)
+    try:
+      users = json.loads(users)
+    except:
+      print 'Something went wrong, unable to decode request'
+
     print "Users: " + str(users)
     return users
 
@@ -60,13 +85,17 @@ class ChatClientController():
 
     @return - the buffer from the server.
     """
-    # NOTE: assuming that the server will parse the request to get 
+    # NOTE: assuming that the server will parse the request to get
     # messages in the format GET:
     self.socket.send('GET:')
-    # NOTE: assuming the server will return messages in this format 
+    # NOTE: assuming the server will return messages in this format
     # username: message
     reqBuff = self.socket.recv(self.RECV_BUFFER)
-    reqBuff = json.loads(reqBuff)
+    try:
+        reqBuff = json.loads(reqBuff)
+    except:
+        pass
+
     print "Buffer: " + str(reqBuff)
     return reqBuff
 
@@ -76,11 +105,26 @@ class ChatClientController():
 
     @return void
     """
-    # NOTE: this method should be called from the tkinter.py file 
+    # NOTE: this method should be called from the tkinter.py file
     # after the user submits a message from the message window
-    # NOTE: assuming that the server will parse the message in this 
+    # NOTE: assuming that the server will parse the message in this
     # format PUT:message
     self.socket.send('PUT:' + message)
+
+  def sendFile(self, filePath):
+    """
+    Sends a file to the server.
+
+    @return void
+    """
+    # lets get file data
+    filePointer = open(filePath, "rb")
+    fileData = filePointer.read()
+    filePointer.close()
+    # lets send the file name
+    head, fileName = os.path.split(filePath)
+    # lets send the data
+    self.socket.send('FILE:' + fileName + 'fileDataBegin' + fileData + 'fileDataEnd')
 
   def establishConnection(self, server, port):
     """
@@ -90,13 +134,13 @@ class ChatClientController():
     """
     try :
         self.socket.connect((server, port))
-        # lets send the username to the server so server can tell us 
+        # lets send the username to the server so server can tell us
         # whether we can start the chat or not
-        # NOTE: assuming that the server will parse username in this 
+        # NOTE: assuming that the server will parse username in this
         # format USERNAME:username
         self.socket.send('USERNAME:' + self.username)
         connMsg = self.socket.recv(self.RECV_BUFFER)
-        # NOTE: assuming that the server will return a message 'true' 
+        # NOTE: assuming that the server will return a message 'true'
         # for a successful conn based on a unique username
         if 'connected' not in connMsg:
             print connMsg
