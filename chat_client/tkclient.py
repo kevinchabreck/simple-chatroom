@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import Tkinter as tk
-from Tkinter import *
 import tkFileDialog
 import tkMessageBox
 import sys
@@ -98,8 +97,8 @@ class TKChatClient(tk.Frame):
     self.input_window.bind("<Return>", self.sendMessage)
 
     # file browse button
-    self.button = Button(self, text="Send file", command=self.sendFile, width=10)
-    self.button.grid(row=1, column=0, sticky=W)
+    self.button = tk.Button(self, text="Send file", command=self.sendFile, width=10)
+    self.button.grid(row=1, column=0, sticky=tk.W)
 
     # Boilerplate for the <<Modified>> virtual event
     self.input_window.tk.call(self.input_window._w, 'edit', 'modified', 0)

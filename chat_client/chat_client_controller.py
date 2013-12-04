@@ -131,7 +131,7 @@ class ChatClientController():
     self.socket.send('PUT:' + message)
 
   def sendCanvasMessage(self, x, y, radius, color):
-    self.socket.send('CPUT:%d %d %d %s \n' % (x, y, radius, color))
+    self.socket.send('CPUT:%d %d %d %s ' % (x, y, radius, color))
 
   def sendFile(self, filePath):
     """
