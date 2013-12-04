@@ -21,6 +21,8 @@ class PaintProtocol(WebSocketServerProtocol):
 		header = data.split(':')[0]
 		if header == 'GETPAINTBUFFER':
 			self.factory.sendPaintBuffer(self)
+		elif header == 'GETUSERS':
+			self.factory.sendUserList(self)
 		elif header == 'USERNAME':
 			self.factory.checkName(self, data.replace('USERNAME:','',1))
 		else:
@@ -49,21 +51,28 @@ class PaintFactory(WebSocketServerFactory):
 
 	def registerClient(self, client, username):
 		if not client in self.CLIENTS.keys():
+			self.CLIENTS[client] = username
 			print "registered client " + username
 			#self.updateClients(client, msg)
 			msg = 'INFO:{} has joined the chat'.format(username)
-			self.updateClients(msg)	
-			self.CLIENTS[client] = username
+			self.updateClients(msg)
+			userlist = 'USERS:' + json.dumps(self.CLIENTS.values())
+			self.updateClients(userlist)
+			#self.CLIENTS[client] = username
 
 	def unregister(self, client):
 		if client in self.CONNECTIONS:
-			print "unregistered CONNECTION " + client.peerstr
 			self.CONNECTIONS.remove(client)
+			print "unregistered CONNECTION " + client.peerstr
 		if client in self.CLIENTS.keys():
-			print "unregistered CLIENT " + self.CLIENTS[client]
-			msg = 'INFO:{} has left the chat'.format(self.CLIENTS[client])
-			self.updateClients(msg)	
+			user = self.CLIENTS[client]
 			del self.CLIENTS[client]
+			print "unregistered CLIENT " + user
+			msg = 'INFO:{} has left the chat'.format(user)
+			self.updateClients(msg)
+			userlist = 'USERS:' + json.dumps(self.CLIENTS.values())
+			self.updateClients(userlist)
+			#del self.CLIENTS[client]
 
 	#def updateClients(self, client, msg):
 	def updateClients(self, msg):
@@ -90,6 +99,10 @@ class PaintFactory(WebSocketServerFactory):
 	def sendPaintBuffer(self, client):
 		print 'sending paint buffer'
 		client.sendMessage('PAINTBUFFER:' + json.dumps(self.PAINTBUFFER))
+
+	def sendUserList(self, client):
+		print 'sending userlist'
+		client.sendMessage('USERS:' + json.dumps(self.CLIENTS.values()))		
 
 if __name__ == '__main__':
 	print 'server is running'

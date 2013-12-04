@@ -1,8 +1,8 @@
 <html>
 <head>
+<title>Paint Chat</title>
 
 <style>
-	
 	
 	.topleft {
 		position: fixed;
@@ -28,7 +28,7 @@
 
 	#reset:hover {
 		border: none;
-		background:red;
+		background: red;
 		box-shadow: 0px 0px 1px #777; 
 	}
 
@@ -47,7 +47,7 @@
 		border-radius: 25px;
 	}
 
-	#chatSpace{
+	#chatSpace, #userlistSpace{
 		height: 480px;
 		float: left;
 	}
@@ -68,8 +68,16 @@
 		position: relative;
 	}
 
-	#canvasSpace{
-		margin-right:10px;
+	#userlistSpace{
+		background: #dddddd;
+		width: 100px;
+		border-radius: 25px;
+		border: 2px solid #a1a1a1;
+		text-align:center;
+	}
+
+	#canvasSpace, #chatSpace{
+		margin-right:1em;
 		float: left;
 	}
 
@@ -136,7 +144,7 @@
 		var ctx = canvas.context;
 		var resetButton = createResetButton(document.getElementById('buttonSpace'));
 		var inputBox = createInputBox(document.getElementById('textEntrySpace'));
-		//var sendButton = createSendButton(document.getElementById('textEntrySpace'));
+		var username = null;
 		
 		ctx.fillCircle = function(x, y, radius, fillColor) {
 			this.fillStyle = fillColor;
@@ -166,13 +174,11 @@
 		canvas.node.onmousedown = function(e) { canvas.isDrawing = true; };
 		canvas.node.onmouseup = function(e) { canvas.isDrawing = false; };
 		resetButton.node.onclick = function(e) { ws.send('RESET:'); }
-		//sendButton.node.onclick = function(e) { sendText(); }
 		inputBox.node.onclick = function(e){ inputBox.node.placeholder = ''; }
 		inputBox.node.onkeypress = function(e) {
 			if (e.keyCode == 13)
 				sendText();
 		}
-
 
 		function sendText(e){
 			ws.send('CHAT:' + inputBox.node.value);
@@ -181,15 +187,13 @@
 
 		ws = new WebSocket("ws://localhost:15013/");
 		ws.onopen = function() { 
-			ws.send('GETPAINTBUFFER:');
-			var username = window.prompt("Enter your username");
+			username = window.prompt("Enter your username");
 			ws.send('USERNAME:' + username);
 		}
 		ws.onclose = function() { alert('server shut down'); }
 
 		// possible message headers: 
-		// CHAT, PAINT, RESET, ACCEPTED, DENIED,
-		// INFO, PAINTBUFFER
+		// CHAT, PAINT, RESET, ACCEPTED, DENIED, INFO, PAINTBUFFER, USERS
 		ws.onmessage = function(e) {
 			var params = e.data.split(':');
 			var header = params[0];
@@ -206,15 +210,14 @@
 				messageSpace.scrollTop = messageSpace.scrollHeight;
 				messageSpace.focus();
 			}
-			else if (header == 'RESET'){
-				ctx.clear();
-			}
+			else if (header == 'RESET'){ ctx.clear(); }
 			else if (header == 'ACCEPTED'){
-				alert('welcome to the chat!');
+				document.title = username + ' - Paint Chat'
+				ws.send('GETPAINTBUFFER:');	
 			}
 			else if (header == 'DENIED'){
 				var reason = params[1];
-				var username = window.prompt("This username is unavailable\nReason: "+reason+"\nEnter different username");
+				username = window.prompt("This username is unavailable\nReason: "+reason+"\nEnter different username");
 				ws.send('USERNAME:' + username);
 			}
 			else if (header == 'PAINTBUFFER'){
@@ -223,6 +226,16 @@
 					i = paintbuffer[i].split(' ');
 					ctx.fillCircle(i[0], i[1], i[2], i[3]);
 				}
+			}
+			else if (header == 'USERS'){
+				var userlist = JSON.parse(params[1]);
+				var userlistSpace = document.getElementById("userlistSpace");
+				ul = '</br><b>USERS</b></br>';
+				ul += '<i>'+userlist.length+' user(s) online</i><hr>';
+				for(var i in userlist){
+					ul += userlist[i] + '</br>';
+				}
+				userlistSpace.innerHTML = ul;
 			}
 		}
 	}
@@ -241,6 +254,10 @@
 <div id="chatSpace"> 
 	<div id="messagesSpace"> </br> </div>
 	<div id="textEntrySpace"> </div> 
+</div>
+<div id='userlistSpace'>
+	</br><b>USERS</b></br>
+	<hr>
 </div>
 <div id="buttonSpace"> </div>
 
