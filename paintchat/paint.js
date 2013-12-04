@@ -42,13 +42,18 @@ function init(container, width, height) {
 	var oldX = null;
 	var oldY = null;
 	var fillColor = 'black';
+	var linewidth = 5;
+
+	function fillBoxes(){
+		$('.brushSpace').css('background-color', fillColor);
+	}
 	
-	ctx.draw = function(oX, oY, nX, nY, width, color) {
+	ctx.draw = function(oX, oY, nX, nY, linewidth, color) {
 		this.strokeStyle = color;
 		this.beginPath();
 		this.moveTo(oX, oY);
 		this.lineTo(nX, nY);
-		this.lineWidth = width;
+		this.lineWidth = linewidth;
 		this.stroke();
 		oldX = nX;
 		oldY = nY;
@@ -60,25 +65,36 @@ function init(container, width, height) {
 	};
 
 	ctx.clear();
+	fillBoxes();
 
-	$(".colorSpace, .brushSpace").hover( function(){
-		$(this).closest(".img").css("z-index", 1);
+	$(".colorSpace").hover( function(){
 		$(this).animate({ height: "45", width: "45" }, "fast");
 	}, function(){
-		$(this).closest(".img").css("z-index", 0);
 		$(this).animate({ height: "40", width: "40" }, "fast");
 	});
 
 	$(".colorSpace").click( function(){
 		fillColor = $(this).css('background-color');
+		fillBoxes();
+	});
+
+	$(".brushSpace").hover( function(){
+		var size = parseFloat($(this).attr('id'));
+		$(this).animate({ height: size + 5, width: size + 5 }, "fast");
+	}, function(){
+		var size = parseFloat($(this).attr('id'));
+		$(this).animate({ height: size, width: size }, "fast");
+	});
+
+	$(".brushSpace").click( function(){
+		linewidth = parseFloat($(this).attr('id'));
 	});
 
 	canvas.node.onmousemove = function(e) {
 		if(canvas.isDrawing){
 			var newX = e.pageX - this.offsetLeft;
 			var newY = e.pageY - this.offsetTop;
-			var width = 5;
-			ws.send('PAINT:'+oldX+' '+oldY+' '+newX+' '+newY+' '+width+' '+fillColor);
+			ws.send('PAINT:'+oldX+' '+oldY+' '+newX+' '+newY+' '+linewidth+' '+fillColor);
 		}
 	};
 

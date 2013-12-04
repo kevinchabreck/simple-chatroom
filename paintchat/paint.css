@@ -109,11 +109,9 @@
 }
 
 .brushSpace{
-	height: 40px;
-	width: 40px;
 	border: 2px solid #a1a1a1;
 	float: left;
 	margin-top: 1.5em;
-	margin-right: 1.5em;
-	margin-left: 1.5em;
+	margin-right: 1em;
+	margin-left: 3em;
 }
