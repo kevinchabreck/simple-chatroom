@@ -32,7 +32,7 @@ def client_named(username):
 			return True
 	return False
 
-# handles new client connection requests. If the first message sent by 
+# handles new client connection requests. If the first message sent by
 # a client is not 'USERNAME xxxx' where xxxx is a unique username, the
 # connection is terminated.
 def handle_connection(server_socket):
@@ -54,8 +54,8 @@ def handle_connection(server_socket):
 		client_socket.send("bad handshake - no username provided")
 		client_socket.close()
 
-# handles messages recieved from clients. If the message does not follow 
-# the form of 'MSG xxxx', where xxxx is the intended message, the message 
+# handles messages recieved from clients. If the message does not follow
+# the form of 'MSG xxxx', where xxxx is the intended message, the message
 # is discarded.
 def handle_client(client_socket):
 	print 'handling client'
@@ -70,11 +70,12 @@ def handle_client(client_socket):
 		sendBuffer(client_socket)
 	elif type == 'CGET':
 		sendCanvasBuffer(client_socket)
+	elif type == 'FILE':
+		getMessage(username, data)
 	elif type == 'USERS':
 		sendUsers(client_socket)
 	else:
 		client_socket.send('bad request\nREQUEST: \n' + data)
-
 
 def getMessage(username, data):
 	msg = username + ': ' + data.replace('PUT:', '', 1)
@@ -95,7 +96,6 @@ def sendCanvasBuffer(client_socket):
 	client_socket.send(json.dumps(canvas_buffer))
 	CLIENTS[client_socket].canvas_buffer = []
 	
-
 def sendUsers(client_socket):
 	users = [client.username for client in CLIENTS.values()]
 	client_socket.send(json.dumps(users))
@@ -119,9 +119,9 @@ if __name__ == "__main__":
 	server_socket.bind((HOST, PORT))
 	server_socket.listen(MAX_CONNNECTIONS)
 	CONNECTIONS.append(server_socket)
- 
+
 	print "Chat server started on port " + str(PORT)
- 
+
  	# listen for sockets ready to be 'recieved' from
 	while 1:
 		try:
@@ -131,7 +131,7 @@ if __name__ == "__main__":
 					handle_connection(sock)
 				elif sock in CLIENTS.keys():
 					handle_client(sock)
-		
+
 		except socket.error:
 			if "sock" in vars() and sock in CLIENTS.keys():
 				update_buffers(CLIENTS[sock].username + " left the room")
