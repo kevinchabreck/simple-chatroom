@@ -36,10 +36,10 @@ class PaintProtocol(WebSocketServerProtocol):
 
 class PaintFactory(WebSocketServerFactory):
 
-	def __init__(self, url):
+	def __init__(self, url, storage):
 		WebSocketServerFactory.__init__(self, url)
 		self.CONNECTIONS = []
-		self.CLIENTS = {}
+		self.storage = storage
 		self.PAINTBUFFER = []
 
 	def registerConnection(self, client):
@@ -48,12 +48,12 @@ class PaintFactory(WebSocketServerFactory):
 			self.CONNECTIONS.append(client)
 
 	def registerClient(self, client, username):
-		if not client in self.CLIENTS.keys():
-			self.CLIENTS[client] = username
+		if not client in self.storage.clients.keys():
+			self.storage.add_client(username)
 			print "registered client " + username
 			msg = 'INFO:{} has joined the chat'.format(username)
 			self.updateClients(msg)
-			userlist = 'USERS:' + json.dumps(self.CLIENTS.values())
+			userlist = 'USERS:' + json.dumps(self.storage.client_names())
 			self.updateClients(userlist)
 
 	def unregister(self, client):
@@ -61,12 +61,12 @@ class PaintFactory(WebSocketServerFactory):
 			self.CONNECTIONS.remove(client)
 			print "unregistered CONNECTION " + client.peerstr
 		if client in self.CLIENTS.keys():
-			user = self.CLIENTS[client]
-			del self.CLIENTS[client]
+			user = self.storage.clients[client]
+			self.storage.remove_client(client)
 			print "unregistered CLIENT " + user
 			msg = 'INFO:{} has left the chat'.format(user)
 			self.updateClients(msg)
-			userlist = 'USERS:' + json.dumps(self.CLIENTS.values())
+			userlist = 'USERS:' + json.dumps(self.storage.client_names())
 			self.updateClients(userlist)
 
 	def updateClients(self, msg):
@@ -102,9 +102,13 @@ class PaintFactory(WebSocketServerFactory):
 		print 'sending userlist'
 		client.sendMessage('USERS:' + json.dumps(self.CLIENTS.values()))		
 
-if __name__ == '__main__':
-	print 'server is running'
-	factory = PaintFactory("ws://localhost:15013")
-	factory.protocol = PaintProtocol
-	listenWS(factory)
-	reactor.run()
+class WebSocketChatServer():
+	def __init__(self, storage, port=15013, host="localhost"):
+		self.storage = storage
+		print 'server is running'
+		factory = PaintFactory("ws://%s:%d" % (host, port), storage)
+		factory.protocol = PaintProtocol
+		listenWS(factory)
+
+	def start(self):
+		reactor.run()
