@@ -111,7 +111,7 @@ class TKChatClient(tk.Frame):
     self.users_window.grid()
 
     self.canvas = tk.Canvas(self, width=500, height=500, bg="#ffffff")
-    self.canvas.bind("<1>", self.paintHandler)
+    self.canvas.bind("<B1-Motion>", self.paintHandler)
     self.canvas.grid(column=1, row=0, rowspan=3)
 
 
