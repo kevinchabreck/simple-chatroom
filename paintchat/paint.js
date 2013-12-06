@@ -48,15 +48,14 @@ function init(container, width, height) {
 		$('.brushSpace').css('background-color', fillColor);
 	}
 	
-	ctx.draw = function(oX, oY, nX, nY, linewidth, color) {
+	ctx.draw = function(x1, y1, x2, y2, linewidth, color) {
 		this.strokeStyle = color;
 		this.beginPath();
-		this.moveTo(oX, oY);
-		this.lineTo(nX, nY);
+		this.moveTo(x1, y1);
+		this.lineTo(x2, y2);
 		this.lineWidth = linewidth;
+		this.closePath()
 		this.stroke();
-		oldX = nX;
-		oldY = nY;
 	};
 	
 	ctx.clear = function() {
@@ -67,34 +66,13 @@ function init(container, width, height) {
 	ctx.clear();
 	fillBoxes();
 
-	$(".colorSpace").hover( function(){
-		$(this).animate({ height: "45", width: "45" }, "fast");
-	}, function(){
-		$(this).animate({ height: "40", width: "40" }, "fast");
-	});
-
-	$(".colorSpace").click( function(){
-		fillColor = $(this).css('background-color');
-		fillBoxes();
-	});
-
-	$(".brushSpace").hover( function(){
-		var size = parseFloat($(this).attr('id'));
-		$(this).animate({ height: size + 5, width: size + 5 }, "fast");
-	}, function(){
-		var size = parseFloat($(this).attr('id'));
-		$(this).animate({ height: size, width: size }, "fast");
-	});
-
-	$(".brushSpace").click( function(){
-		linewidth = parseFloat($(this).attr('id'));
-	});
-
 	canvas.node.onmousemove = function(e) {
 		if(canvas.isDrawing){
 			var newX = e.pageX - this.offsetLeft;
 			var newY = e.pageY - this.offsetTop;
 			ws.send('PAINT:'+oldX+' '+oldY+' '+newX+' '+newY+' '+linewidth+' '+fillColor);
+			oldX = newX;
+			oldY = newY;
 		}
 	};
 
@@ -114,8 +92,9 @@ function init(container, width, height) {
 	inputBox.node.onclick = function(e){ inputBox.node.placeholder = ''; };
 	
 	inputBox.node.onkeypress = function(e) {
-		if (e.keyCode == 13)
+		if (e.keyCode == 13){
 			sendText();
+		}
 	};
 
 	function sendText(e){
@@ -144,11 +123,13 @@ function init(container, width, height) {
 			ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
 		}
 		else if((header == 'CHAT')||(header == 'INFO')){
-			var msg = e.data.replace(header+':','',1);
-			if (header == 'INFO')
+			var msg = e.data.replace(header+':','');
+			if (header == 'INFO'){
 				msg = '<i>'+msg+'</i>';
-			else if (header == 'CHAT')
-				msg = '<b>' + msg.replace(':','</b>:',1);
+			}
+			else if (header == 'CHAT'){
+				msg = '<b>' + msg.replace(':','</b>:');
+			}
 			var messageSpace = document.getElementById("messagesSpace");
 			messageSpace.innerHTML += msg + '</br></br>';
 			messageSpace.scrollTop = messageSpace.scrollHeight;
@@ -184,6 +165,29 @@ function init(container, width, height) {
 			userlistSpace.innerHTML = ul;
 		}
 	};
+
+	$(".colorSpace").hover( function(){
+		$(this).animate({ height: "45", width: "45" }, "fast");
+	}, function(){
+		$(this).animate({ height: "40", width: "40" }, "fast");
+	});
+
+	$(".colorSpace").click( function(){
+		fillColor = $(this).css('background-color');
+		fillBoxes();
+	});
+
+	$(".brushSpace").hover( function(){
+		var size = parseFloat($(this).attr('id'));
+		$(this).animate({ height: size + 5, width: size + 5 }, "fast");
+	}, function(){
+		var size = parseFloat($(this).attr('id'));
+		$(this).animate({ height: size, width: size }, "fast");
+	});
+
+	$(".brushSpace").click( function(){
+		linewidth = parseFloat($(this).attr('id'));
+	});
 
 }
 
