@@ -1,10 +1,11 @@
 function createCanvas(parent, width, height){
 	var canvas = {};
 	canvas.node = document.createElement('canvas');
+	canvas.node.id = 'canvas';
 	canvas.context = canvas.node.getContext('2d');
 	canvas.node.width = 500;
 	canvas.node.height = 500;
-	parent.appendChild(canvas.node);
+	$(parent).prepend(canvas.node);
 	return canvas;
 }
 
@@ -14,7 +15,7 @@ function createResetButton(parent){
 	button.node.type = 'submit';
 	button.node.id = 'reset';
 	button.node.value = "Reset!";
-	parent.appendChild(button.node)
+	parent.appendChild(button.node);
 	return button;
 }
 
@@ -24,14 +25,14 @@ function createInputBox(parent){
 	textBox.node.rows = 5;
 	textBox.node.cols = 32;
 	textBox.node.maxlength = 100;
-	textBox.node.placeholder = 'say something!'
+	textBox.node.placeholder = 'say something!';
 	wrap = "hard";
 	textBox.node.id = 'inputBox';
 	parent.appendChild(textBox.node);
 	return textBox;
 }
 
-function init(container, width, height, fillColor) {
+function init(container, width, height) {
 
 	var canvas = createCanvas(container, width, height);
 	var ctx = canvas.context;
@@ -40,14 +41,19 @@ function init(container, width, height, fillColor) {
 	var username = null;
 	var oldX = null;
 	var oldY = null;
+	var fillColor = 'black';
+	var linewidth = 5;
+
+	function fillBoxes(){
+		$('.brushSpace').css('background-color', fillColor);
+	}
 	
-	ctx.draw = function(oX, oY, nX, nY, width, fillColor) {
-		this.strokeStyle = fillColor;
+	ctx.draw = function(oX, oY, nX, nY, linewidth, color) {
+		this.strokeStyle = color;
 		this.beginPath();
 		this.moveTo(oX, oY);
 		this.lineTo(nX, nY);
-		this.closePath();
-		this.lineWidth = width;
+		this.lineWidth = linewidth;
 		this.stroke();
 		oldX = nX;
 		oldY = nY;
@@ -59,26 +65,54 @@ function init(container, width, height, fillColor) {
 	};
 
 	ctx.clear();
+	fillBoxes();
+
+	$(".colorSpace").hover( function(){
+		$(this).animate({ height: "45", width: "45" }, "fast");
+	}, function(){
+		$(this).animate({ height: "40", width: "40" }, "fast");
+	});
+
+	$(".colorSpace").click( function(){
+		fillColor = $(this).css('background-color');
+		fillBoxes();
+	});
+
+	$(".brushSpace").hover( function(){
+		var size = parseFloat($(this).attr('id'));
+		$(this).animate({ height: size + 5, width: size + 5 }, "fast");
+	}, function(){
+		var size = parseFloat($(this).attr('id'));
+		$(this).animate({ height: size, width: size }, "fast");
+	});
+
+	$(".brushSpace").click( function(){
+		linewidth = parseFloat($(this).attr('id'));
+	});
 
 	canvas.node.onmousemove = function(e) {
 		if(canvas.isDrawing){
 			var newX = e.pageX - this.offsetLeft;
 			var newY = e.pageY - this.offsetTop;
-			var width = 5;
-			var fillColor = '#ff0000';
-			ws.send('PAINT:'+oldX+' '+oldY+' '+newX+' '+newY+' '+width+' '+fillColor);
+			ws.send('PAINT:'+oldX+' '+oldY+' '+newX+' '+newY+' '+linewidth+' '+fillColor);
 		}
 	};
 
 	canvas.node.onmousedown = function(e) { 
 		oldX = e.pageX - this.offsetLeft;
 		oldY = e.pageY - this.offsetTop;
-		canvas.isDrawing = true; 
+		canvas.isDrawing = true;
 	};
 	
 	canvas.node.onmouseup = function(e) { canvas.isDrawing = false; };
-	resetButton.node.onclick = function(e) { ws.send('RESET:'); };
+	
+	resetButton.node.onclick = function(e) { 
+		ws.send('RESET:'); 
+		$(resetButton.node).blur();
+	};
+	
 	inputBox.node.onclick = function(e){ inputBox.node.placeholder = ''; };
+	
 	inputBox.node.onkeypress = function(e) {
 		if (e.keyCode == 13)
 			sendText();
@@ -90,19 +124,23 @@ function init(container, width, height, fillColor) {
 	}
 
 	ws = new WebSocket("ws://localhost:15013/");
+	
 	ws.onopen = function() { 
 		username = window.prompt("Enter your username");
 		ws.send('USERNAME:' + username);
 	};
+	
 	ws.onclose = function() { alert('server shut down'); };
-
+	
 	// possible message headers: 
 	// CHAT, PAINT, RESET, ACCEPTED, DENIED, INFO, PAINTBUFFER, USERS
 	ws.onmessage = function(e) {
 		var params = e.data.split(':');
 		var header = params[0];
 		if (header == 'PAINT'){
-			params = params[1].split(' ')
+			arr = params[1].split(' ');
+			params = arr.splice(0,5);
+			params.push(arr.join(' '));
 			ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
 		}
 		else if((header == 'CHAT')||(header == 'INFO')){
@@ -118,7 +156,7 @@ function init(container, width, height, fillColor) {
 		}
 		else if (header == 'RESET'){ ctx.clear(); }
 		else if (header == 'ACCEPTED'){
-			document.title = username + ' - Paint Chat'
+			document.title = username + ' - Paint Chat';
 			ws.send('GETPAINTBUFFER:');	
 		}
 		else if (header == 'DENIED'){
@@ -129,8 +167,10 @@ function init(container, width, height, fillColor) {
 		else if (header == 'PAINTBUFFER'){
 			var paintbuffer = JSON.parse(params[1]);
 			for(var i in paintbuffer){
-				i = paintbuffer[i].split(' ');
-				ctx.draw(i[0], i[1], i[2], i[3], i[4], i[5]);
+				arr = paintbuffer[i].split(' ');
+				params = arr.splice(0,5);
+				params.push(arr.join(' '));
+				ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
 			}
 		}
 		else if (header == 'USERS'){
@@ -144,9 +184,10 @@ function init(container, width, height, fillColor) {
 			userlistSpace.innerHTML = ul;
 		}
 	};
+
 }
 
 window.onload = function(){
 	var container = document.getElementById('canvasSpace');
-	init(container, 500, 500, '#ddd');
+	init(container, 500, 500);
 }

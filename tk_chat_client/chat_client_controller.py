@@ -3,7 +3,15 @@ import socket
 import sys
 import os
 import json
+import base64
 
+
+# Decorator for methods that have calls to the sockets.
+# Provides error handling without having to rewrite it everywhere.
+#
+# @param function - the function or method the decorator is being
+#   applied to.
+# @return the return of the function being decorated
 def calls_socket(function):
   def inner(*args):
     try:
@@ -13,9 +21,16 @@ def calls_socket(function):
       args[0].socket.close()
   return inner
 
+# The class that provides interaction with the server for the
+# chat client
 class ChatClientController():
-  # NOTE: expecting the name to come from instantiation of 
-  # this class from tkinter.py file
+
+  # Initialize the controller and set up a connection to
+  # the server with the given username.
+  #
+  # @param name - The username with which to set up the connection.
+  # @param view - A reference to the view that the controller will
+  #   be updating.
   def __init__(self, name, view=None):
     self.username    = name
     self.view        = view
@@ -24,14 +39,12 @@ class ChatClientController():
     self.socket.settimeout(2)
     # NOTE: change the host and port accordingly, i.e this
     # should be the same as the one used @ server side
-    self.establishConnection('127.0.0.1', 5000)
+    self.establishConnection('127.0.0.1', 15011)
 
+  # Append to the output list of the view.
+  # 
+  # @return void
   def updateOutput(self):
-    """
-    Appends to the output list.
-
-    @return void
-    """
     print "Requesting Buffer"
     buf = self.requestBuffer()
     for message in buf:
@@ -52,6 +65,7 @@ class ChatClientController():
           self.view.confirmFileTransfer(username, fileName)
           # if the user wants to save the file then lets save it
           fileData     = messageSplit [1].replace('fileDataEnd', '')
+          fileData = base64.decodestring(fileData)
           # Make the path if it doesn't exist
           filePath = os.path.dirname("./files/")
           if not os.path.exists(filePath):
@@ -59,6 +73,7 @@ class ChatClientController():
           filePointer = open(filePath + "/" + fileName, "wb")
           filePointer.write(fileData);
           filePointer.close()
+          self.view.appendMessage("File " + filePath + "/" + fileName + " downloaded")
       else:
         self.view.appendMessage(message)
 
@@ -68,23 +83,19 @@ class ChatClientController():
       message = message.split(" ")
       self.view.appendCanvasMessage(message)
 
+  # Refreshes the user list of the view.
+  #
+  # @return void
   def updateUsers(self):
-    """
-    Refreshes the users list.
-
-    @return void
-    """
     users = self.requestUsers()
     self.view.updateUsers(users)
 
+  # Requests the user list from the server
+  #
+  # @return - the list of users
   @calls_socket
   def requestUsers(self):
-    """
-    Requests the users list from the server.
-
-    @return - the list of users
-    """
-    # NOTE: assumin that the server will parse the request to
+    # NOTE: assumin that the server will parse the request to 
     # get users in the format USERS:
     self.socket.send('USERS:')
     # NOTE: assuming that the list of users returned from the server
@@ -100,14 +111,13 @@ class ChatClientController():
     print "Users: " + str(users)
     return users
 
+
+  # Requests the message buffer from the server.
+  #
+  # @return - the message buffer from the server.
   @calls_socket
   def requestBuffer(self):
-    """
-    Requests the buffer from the server.
-
-    @return - the buffer from the server.
-    """
-    # NOTE: assuming that the server will parse the request to get
+    # NOTE: assuming that the server will parse the request to get 
     # messages in the format GET:
     self.socket.send('GET:')
     # NOTE: assuming the server will return messages in this format
@@ -121,6 +131,9 @@ class ChatClientController():
     print "Buffer: " + str(reqBuff)
     return reqBuff
 
+  # Requests the canvas buffer from the server.
+  #
+  # #return - the canvas buffer from the server.
   @calls_socket
   def requestCanvasBuffer(self):
     self.socket.send('CGET:')
@@ -129,23 +142,33 @@ class ChatClientController():
     print "Buffer: " + str(reqBuff)
     return reqBuff
 
+  # Sends a message to the server.
+  #
+  # @param message - the message to send to the server
+  # @return void
   @calls_socket
   def sendMessage(self, message):
-    """
-    Sends a message to the server.
-
-    @return void
-    """
-    # NOTE: this method should be called from the tkinter.py file
+    # NOTE: this method should be called from the tkinter.py file 
     # after the user submits a message from the message window
     # NOTE: assuming that the server will parse the message in this
     # format PUT:message
     self.socket.send('PUT:' + message)
 
+  # Sends a canvas message to the server.
+  #
+  # @param x - the x coordinate of center of the circle to draw
+  # @param y - the y coordinate of center of the circle to draw
+  # @param radius - the radius of the circle to draw
+  # @param color - the color of the circle to draw
+  # @return void
   @calls_socket
   def sendCanvasMessage(self, x, y, radius, color):
     self.socket.send('CPUT:%d %d %d %s ' % (x, y, radius, color))
 
+  # Sends a file to the server.
+  #
+  # @param filePath - the path of the file to send.
+  # @return void
   @calls_socket
   def sendFile(self, filePath):
     """
@@ -157,17 +180,17 @@ class ChatClientController():
     filePointer = open(filePath, "rb")
     fileData = filePointer.read()
     filePointer.close()
+    fileData = base64.encodestring(fileData)
     # lets send the file name
     head, fileName = os.path.split(filePath)
     # lets send the data
     self.socket.send('FILE:' + fileName + 'fileDataBegin' + fileData + 'fileDataEnd')
 
+  # Establishes a connection with the given server, using
+  # the username field.
+  #
+  # @return - true is successful, false otherwise
   def establishConnection(self, server, port):
-    """
-    Establishes a connection with the given server and username.
-
-    @return true if successful, false otherwise.
-    """
     try :
         self.socket.connect((server, port))
         # lets send the username to the server so server can tell us
@@ -186,5 +209,8 @@ class ChatClientController():
         sys.exit()
     return True
 
+  # Close the established connection.
+  #
+  # @return void
   def close(self):
     self.socket.close()
