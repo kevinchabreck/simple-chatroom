@@ -3,6 +3,12 @@ import socket
 import sys
 import json
 
+# Decorator for methods that have calls to the sockets.
+# Provides error handling without having to rewrite it everywhere.
+#
+# @param function - the function or method the decorator is being
+#   applied to.
+# @return the return of the function being decorated
 def calls_socket(function):
   def inner(*args):
     try:
@@ -12,9 +18,16 @@ def calls_socket(function):
       args[0].socket.close()
   return inner
 
+# The class that provides interaction with the server for the
+# chat client
 class ChatClientController():
-  # NOTE: expecting the name to come from instantiation of 
-  # this class from tkinter.py file
+
+  # Initialize the controller and set up a connection to
+  # the server with the given username.
+  #
+  # @param name - The username with which to set up the connection.
+  # @param view - A reference to the view that the controller will
+  #   be updating.
   def __init__(self, name, view=None):
     self.username    = name
     self.view        = view
@@ -23,36 +36,30 @@ class ChatClientController():
     self.socket.settimeout(2)
     # NOTE: change the host and port accordingly, i.e this 
     # should be the same as the one used @ server side
-    self.establishConnection('127.0.0.1', 5000)
+    self.establishConnection('student.cs.appstate.edu', 15011)
 
+  # Append to the output list of the view.
+  # 
+  # @return void
   def updateOutput(self):
-    """
-    Appends to the output list.
-
-    @return void
-    """
     print "Requesting Buffer"
     buf = self.requestBuffer()
     for message in buf:
       print message
       self.view.appendMessage(message)
 
+  # Refreshes the user list of the view.
+  #
+  # @return void
   def updateUsers(self):
-    """
-    Refreshes the users list.
-
-    @return void
-    """
     users = self.requestUsers()
     self.view.updateUsers(users)
 
+  # Requests the user list from the server
+  #
+  # @return - the list of users
   @calls_socket
   def requestUsers(self):
-    """
-    Requests the users list from the server.
-
-    @return - the list of users
-    """
     # NOTE: assumin that the server will parse the request to 
     # get users in the format USERS:
     self.socket.send('USERS:')
@@ -68,13 +75,11 @@ class ChatClientController():
     print "Users: " + str(users)
     return users
 
+  # Requests the message buffer from the server.
+  #
+  # @return - the message buffer from the server.
   @calls_socket
   def requestBuffer(self):
-    """
-    Requests the buffer from the server.
-
-    @return - the buffer from the server.
-    """
     # NOTE: assuming that the server will parse the request to get 
     # messages in the format GET:
     self.socket.send('GET:')
@@ -90,25 +95,22 @@ class ChatClientController():
     return reqBuff
 
 
+  # Sends a message to the server.
+  #
+  # @return void
   @calls_socket
   def sendMessage(self, message):
-    """
-    Sends a message to the server.
-
-    @return void
-    """
     # NOTE: this method should be called from the tkinter.py file 
     # after the user submits a message from the message window
     # NOTE: assuming that the server will parse the message in this 
     # format PUT:message
     self.socket.send('PUT:' + message)
 
+  # Establishes a connection with the given server, using
+  # the username field.
+  #
+  # @return - true is successful, false otherwise
   def establishConnection(self, server, port):
-    """
-    Establishes a connection with the given server and username.
-
-    @return true if successful, false otherwise.
-    """
     try :
         self.socket.connect((server, port))
         # lets send the username to the server so server can tell us 
@@ -127,5 +129,8 @@ class ChatClientController():
         sys.exit()
     return True
 
+  # Close the established connection.
+  #
+  # @return void
   def close(self):
     self.socket.close()
