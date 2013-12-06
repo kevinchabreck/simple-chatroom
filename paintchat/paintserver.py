@@ -89,6 +89,9 @@ class PaintFactory(WebSocketServerFactory):
 			userlist = 'USERS:' + json.dumps(self.CLIENTS.values())
 			self.updateClients(userlist)
 
+	# @function:	unregister
+	# @description: removes client to list of connection
+	# @param:		client - the cient to remove from the client dictionary
 	def unregister(self, client):
 		if client in self.CONNECTIONS:
 			self.CONNECTIONS.remove(client)
@@ -102,11 +105,18 @@ class PaintFactory(WebSocketServerFactory):
 			userlist = 'USERS:' + json.dumps(self.CLIENTS.values())
 			self.updateClients(userlist)
 
+	# @function: updateClients
+	# @description: updates all clients with the given message
+	# @param: msg - the message to send to the clients
 	def updateClients(self, msg):
 		for c in self.CONNECTIONS:
 			c.sendMessage(msg)
 			print "update *"+msg+"* sent to " + c.peerstr
 
+	# @function: checkName
+	# @description: Checks that a client's requested username is valid.
+	# @param: client - the client requesting a username
+	# @param: username - the requested username.
 	def checkName(self, client, username):
 		if ':' in username:
 			client.sendMessage('DENIED:invalid character ":"')
@@ -120,6 +130,9 @@ class PaintFactory(WebSocketServerFactory):
 			self.registerClient(client, username)
 			client.sendMessage('ACCEPTED:')
 
+	# @function: updateBuffer
+	# @description: Update the paintbuffer with a paint message
+	# @param: msg - the paint message to use
 	def updateBuffer(self, msg):
 		if msg == 'RESET:':
 			self.PAINTBUFFER = []
@@ -127,10 +140,16 @@ class PaintFactory(WebSocketServerFactory):
 			self.PAINTBUFFER.append(msg.replace('PAINT:', ''))
 			print 'added ' + msg.replace('PAINT:', '') + ' to buffer'
 
+	# @function: sendPaintBuffer
+	# @description: Sends the history of paint commands to a client.
+	# @param: client - the client to send the paint buffer to.
 	def sendPaintBuffer(self, client):
 		print 'sending paint buffer'
 		client.sendMessage('PAINTBUFFER:' + json.dumps(self.PAINTBUFFER))
 
+	# @function: sendUserList
+	# @description: Sends the list of current users to a client.
+	# @param: client - the client to set the list of users to.
 	def sendUserList(self, client):
 		print 'sending userlist'
 		client.sendMessage('USERS:' + json.dumps(self.CLIENTS.values()))		
