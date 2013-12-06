@@ -15,11 +15,17 @@ class Client():
 		self.username = username
 
 # updates all buffers with the recieved message
+#
+# @param message - the new message
+# @return void
 def update_buffers(message):
 	for client in CLIENTS:
 		CLIENTS[client].buffer.append(message)
 
 # checks for clients with the username 'username'
+#
+# @param username - the username to check for
+# @return true if there is such a user connected, false otherwise
 def client_named(username):
 	for client in CLIENTS:
 		if CLIENTS[client].username == username:
@@ -29,6 +35,9 @@ def client_named(username):
 # handles new client connection requests. If the first message sent by 
 # a client is not 'USERNAME xxxx' where xxxx is a unique username, the
 # connection is terminated.
+#
+# @param server_socket - The server socket that recieved the connection request.
+# @return void
 def handle_connection(server_socket):
 	print 'new connection'
 	client_socket, addr = server_socket.accept()
@@ -49,8 +58,10 @@ def handle_connection(server_socket):
 		client_socket.close()
 
 # handles messages recieved from clients. If the message does not follow 
-# the form of 'MSG xxxx', where xxxx is the intended message, the message 
-# is discarded.
+# the correct form, the message is discarded.
+#
+# @param client_socket - the socket the request came in on
+# @return void
 def handle_client(client_socket):
 	print 'handling client'
 	username = CLIENTS[client_socket].username
@@ -66,20 +77,34 @@ def handle_client(client_socket):
 		client_socket.send('bad request\nREQUEST: \n' + data)
 
 
+# Handles a message that has been recieved.
+#
+# @param username - the user the message was recieved from.
+# @param data - the data that came in from the socket.
+# @return void
 def getMessage(username, data):
 	msg = username + ': ' + data.replace('PUT:', '', 1)
 	print msg
 	update_buffers(msg)
 
+# Send the buffer for the client socket to the client socket.
+#
+# @param client_socket - the socket that requested its buffer
+# @return void
 def sendBuffer(client_socket):
 	buffer = CLIENTS[client_socket].buffer
 	client_socket.send(json.dumps(buffer))
 	CLIENTS[client_socket].buffer = []
 
+# Send the users list to the client socket.
+#
+# @param client_socket - the socket that requested the userlist
+# @return void
 def sendUsers(client_socket):
 	users = [client.username for client in CLIENTS.values()]
 	client_socket.send(json.dumps(users))
 
+# Main method
 if __name__ == "__main__":
 
 	# initialize global connection structures
