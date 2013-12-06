@@ -5,17 +5,28 @@ import json
 
 clicks = 0;
 
+# @class: 		PaintProtocol
+# @description: a protocol with event handlers for opening connections, closing
+#				connections, and recieving messages from clients. Required by
+#				the PaintFactory class
+# @extends: 		WebSocketServerProtocol
 class PaintProtocol(WebSocketServerProtocol):
 
+	# @function: 	onOpen
+	# @description:	handles the event of establishing a new connection
 	def onOpen(self):
 		self.factory.registerConnection(self)
 
+	# @function:	connectionLost
+	# @description: handles the event of losing a connection
 	def connectionLost(self, reason):
 		WebSocketServerProtocol.connectionLost(self, reason)
 		self.factory.unregister(self)
 
-	# possible message headers:
-	# PAINT, CHAT, RESET, USERNAME, GETPAINTBUFFER
+	# @function: 	onMessage
+	# @description:	handles the event of recieving a message from a client.
+	# 				possible message headers: PAINT, CHAT, RESET, USERNAME, 
+	#				GETPAINTBUFFER
 	def onMessage(self, data, binary):
 		print data
 		header = data.split(':')[0]
@@ -33,20 +44,34 @@ class PaintProtocol(WebSocketServerProtocol):
 		else:
 			self.sendMessage('DENIED:unregistered user')
 			
-
+# @class:		PaintFactory
+# @description:	manages connected clients - registers/unregisters connections,
+#				broadcasts messages to connected clients. Also responsible for
+#				paint buffer managment
+# @extends WebSocketServerFactory
 class PaintFactory(WebSocketServerFactory):
 
+	# @function:	init
+	# @description: constructor function - initializes the global 
+	#				client/connection/buffer structures
+	# @param:		url - the URL address to listen for connections/messages on
 	def __init__(self, url, storage):
 		WebSocketServerFactory.__init__(self, url)
 		self.CONNECTIONS = []
 		self.storage = storage
 		self.PAINTBUFFER = []
 
+	# @function:	registerConnection
+	# @description: adds client to list of connection
+	# @param:		client - the cient to add to the connections list
 	def registerConnection(self, client):
 		if not client in self.CONNECTIONS:
 			print "registered connection " + client.peerstr
 			self.CONNECTIONS.append(client)
 
+	# @function:	registerClient
+	# @description: adds client to list of connection
+	# @param:		client - the cient to add to the client dictionary
 	def registerClient(self, client, username):
 		if not client in self.storage.clients.keys():
 			self.storage.add_client(username)
@@ -56,6 +81,9 @@ class PaintFactory(WebSocketServerFactory):
 			userlist = 'USERS:' + json.dumps(self.storage.client_names())
 			self.updateClients(userlist)
 
+	# @function:	unregister
+	# @description: removes client to list of connection
+	# @param:		client - the cient to remove from the client dictionary
 	def unregister(self, client):
 		if client in self.CONNECTIONS:
 			self.CONNECTIONS.remove(client)
@@ -69,11 +97,18 @@ class PaintFactory(WebSocketServerFactory):
 			userlist = 'USERS:' + json.dumps(self.storage.client_names())
 			self.updateClients(userlist)
 
+	# @function: updateClients
+  # @description: updates all clients with the given message
+  # @param: msg - the message to send to the clients
 	def updateClients(self, msg):
 		for c in self.CONNECTIONS:
 			c.sendMessage(msg)
 			print "update *"+msg+"* sent to " + c.peerstr
 
+	# @function: checkName
+  # @description: Checks that a client's requested username is valid.
+  # @param: client - the client requesting a username
+  # @param: username - the requested username.
 	def checkName(self, client, username):
 		if ':' in username:
 			client.sendMessage('DENIED:invalid character ":"')
@@ -87,6 +122,9 @@ class PaintFactory(WebSocketServerFactory):
 			self.registerClient(client, username)
 			client.sendMessage('ACCEPTED:')
 
+	# @function: updateBuffer
+  # @description: Update the paintbuffer with a paint message
+  # @param: msg - the paint message to use
 	def updateBuffer(self, msg):
 		if msg == 'RESET:':
 			self.PAINTBUFFER = []
@@ -94,21 +132,32 @@ class PaintFactory(WebSocketServerFactory):
 			self.PAINTBUFFER.append(msg.replace('PAINT:', ''))
 			print 'added ' + msg.replace('PAINT:', '') + ' to buffer'
 
+	# @function: sendPaintBuffer
+  # @description: Sends the history of paint commands to a client.
+  # @param: client - the client to send the paint buffer to.
 	def sendPaintBuffer(self, client):
 		print 'sending paint buffer'
 		client.sendMessage('PAINTBUFFER:' + json.dumps(self.PAINTBUFFER))
 
+	# @function: sendUserList
+  # @description: Sends the list of current users to a client.
+  # @param: client - the client to set the list of users to.
 	def sendUserList(self, client):
 		print 'sending userlist'
 		client.sendMessage('USERS:' + json.dumps(self.CLIENTS.values()))		
 
+# A class to launch the server from
 class WebSocketChatServer():
+	# Set up the web socket server.
 	def __init__(self, storage, port=15013, host="localhost"):
 		self.storage = storage
 		print 'server is running'
+		# define a factory
 		factory = PaintFactory("ws://%s:%d" % (host, port), storage)
+		# assign it a protocol
 		factory.protocol = PaintProtocol
 		listenWS(factory)
 
+	# Start the web socket server. Blocks waiting for input.
 	def start(self):
 		reactor.run()
