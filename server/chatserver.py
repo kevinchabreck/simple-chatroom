@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
 	# server settings
 	RECV_BUFFER = 4096
-	PORT = 5000
+	PORT = 15011
 	HOST = "localhost"
 	MAX_CONNNECTIONS = 10
 

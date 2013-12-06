@@ -36,7 +36,7 @@ class ChatClientController():
     self.socket.settimeout(2)
     # NOTE: change the host and port accordingly, i.e this 
     # should be the same as the one used @ server side
-    self.establishConnection('student.cs.appstate.edu', 15011)
+    self.establishConnection('127.0.0.1', 15011)
 
   # Append to the output list of the view.
   # 
