@@ -40,11 +40,16 @@ class Storage():
 
 
   # updates all buffers with the recieved message
-  def update_buffers(message):
+  #
+  # @param message - the new message
+  # @return void  def update_buffers(message):
     for client in self.clients:
       self.clients[client].buffer.append(message)
 
   # checks for clients with the username 'username'
+  #
+  # @param username - the username to check for
+  # @return true if there is such a user connected, false otherwise
   def client_named(username):
     for client in self.clients:
       if self.clients[client].username == username:
