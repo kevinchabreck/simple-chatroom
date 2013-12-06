@@ -1,22 +1,40 @@
 #!/usr/bin/python
 
+##############################################################################
+#
+# @program: 	paintserver.py
+# @description:	a python-based server for a collaborative drawing chatroom
+#
+##############################################################################
+
 from twisted.internet import reactor
 from autobahn.websocket import WebSocketServerFactory, WebSocketServerProtocol, listenWS
 import json
 
 clicks = 0;
 
+# @class: 		PaintProtocol
+# @description: a protocol with event handlers for opening connections, closing
+#				connections, and recieving messages from clients. Required by
+#				the PaintFactory class
+# @extends: 		WebSocketServerProtocol
 class PaintProtocol(WebSocketServerProtocol):
 
+	# @function: 	onOpen
+	# @description:	handles the event of establishing a new connection
 	def onOpen(self):
 		self.factory.registerConnection(self)
 
+	# @function:	connectionLost
+	# @description: handles the event of losing a connection			
 	def connectionLost(self, reason):
 		WebSocketServerProtocol.connectionLost(self, reason)
 		self.factory.unregister(self)
 
-	# possible message headers:
-	# PAINT, CHAT, RESET, USERNAME, GETPAINTBUFFER
+	# @function: 	onMessage
+	# @description:	handles the event of recieving a message from a client.
+	# 				possible message headers: PAINT, CHAT, RESET, USERNAME, 
+	#				GETPAINTBUFFER
 	def onMessage(self, data, binary):
 		print data
 		header = data.split(':')[0]
@@ -34,20 +52,34 @@ class PaintProtocol(WebSocketServerProtocol):
 		else:
 			self.sendMessage('DENIED:unregistered user')
 			
-
+# @class:		PaintFactory
+# @description:	manages connected clients - registers/unregisters connections,
+#				broadcasts messages to connected clients. Also responsible for
+#				paint buffer managment
+# @extends WebSocketServerFactory
 class PaintFactory(WebSocketServerFactory):
 
+	# @function:	init
+	# @description: constructor function - initializes the global 
+	#				client/connection/buffer structures
+	# @param:		url - the URL address to listen for connections/messages on
 	def __init__(self, url):
 		WebSocketServerFactory.__init__(self, url)
 		self.CONNECTIONS = []
 		self.CLIENTS = {}
 		self.PAINTBUFFER = []
 
+	# @function:	registerConnection
+	# @description: adds client to list of connection
+	# @param:		client - the cient to add to the connections list
 	def registerConnection(self, client):
 		if not client in self.CONNECTIONS:
 			print "registered connection " + client.peerstr
 			self.CONNECTIONS.append(client)
 
+	# @function:	registerClient
+	# @description: adds client to list of connection
+	# @param:		client - the cient to add to the client dictionary
 	def registerClient(self, client, username):
 		if not client in self.CLIENTS.keys():
 			self.CLIENTS[client] = username
@@ -105,7 +137,10 @@ class PaintFactory(WebSocketServerFactory):
 
 if __name__ == '__main__':
 	print 'server is running'
+	# define a factory
 	factory = PaintFactory("ws://localhost:15013")
+	# assign it a protocol
 	factory.protocol = PaintProtocol
+	# start listening
 	listenWS(factory)
 	reactor.run()

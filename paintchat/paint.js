@@ -1,3 +1,7 @@
+/**************************************************************************
+* Element initialization functions
+**************************************************************************/
+
 function createCanvas(parent, width, height){
 	var canvas = {};
 	canvas.node = document.createElement('canvas');
@@ -34,6 +38,10 @@ function createInputBox(parent){
 
 function init(container, width, height) {
 
+	/**************************************************************************
+	* 'global' variables and element initialization
+	**************************************************************************/
+
 	var canvas = createCanvas(container, width, height);
 	var ctx = canvas.context;
 	var resetButton = createResetButton(document.getElementById('buttonSpace'));
@@ -44,10 +52,10 @@ function init(container, width, height) {
 	var fillColor = 'black';
 	var linewidth = 5;
 
-	function fillBoxes(){
-		$('.brushSpace').css('background-color', fillColor);
-	}
-	
+	/**************************************************************************
+	* Canvas manipulation
+	**************************************************************************/
+
 	ctx.draw = function(x1, y1, x2, y2, linewidth, color) {
 		this.strokeStyle = color;
 		this.beginPath();
@@ -63,8 +71,9 @@ function init(container, width, height) {
 		ctx.fillRect(0, 0, width, height);
 	};
 
-	ctx.clear();
-	fillBoxes();
+	/**************************************************************************
+	* Canvas, chat box, and reset button event handlers
+	**************************************************************************/
 
 	canvas.node.onmousemove = function(e) {
 		if(canvas.isDrawing){
@@ -97,10 +106,9 @@ function init(container, width, height) {
 		}
 	};
 
-	function sendText(e){
-		ws.send('CHAT:' + inputBox.node.value);
-		inputBox.node.value = '';
-	}
+	/**************************************************************************
+	* WebSocket event handlers
+	**************************************************************************/
 
 	ws = new WebSocket("ws://localhost:15013/");
 	
@@ -166,6 +174,10 @@ function init(container, width, height) {
 		}
 	};
 
+	/**************************************************************************
+	* jQuery animation functions
+	**************************************************************************/
+
 	$(".colorSpace").hover( function(){
 		$(this).animate({ height: "45", width: "45" }, "fast");
 	}, function(){
@@ -189,6 +201,21 @@ function init(container, width, height) {
 		linewidth = parseFloat($(this).attr('id'));
 	});
 
+	/**************************************************************************
+	* miscellaneous helper functions
+	**************************************************************************/
+
+	function fillBoxes(){
+		$('.brushSpace').css('background-color', fillColor);
+	}
+
+	function sendText(e){
+		ws.send('CHAT:' + inputBox.node.value);
+		inputBox.node.value = '';
+	}
+
+	ctx.clear();
+	fillBoxes();
 }
 
 window.onload = function(){
