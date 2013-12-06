@@ -7,6 +7,7 @@ from chat_client_controller import *
 
 class TKChatClient(tk.Frame):
   INPUT_LIMIT = 100
+  REFRESH_RATE = 1000
 
   def __init__(self, controller, master=None):
     tk.Frame.__init__(self, master)
@@ -28,7 +29,7 @@ class TKChatClient(tk.Frame):
       print "Refreshing"
       self.controller.updateOutput()
       self.controller.updateUsers()
-      self.after(1000, self.refresh)
+      self.after(REFRESH_RATE, self.refresh)
 
 
   def updateUsers(self, users_list):
@@ -38,20 +39,20 @@ class TKChatClient(tk.Frame):
     self.users_window.config(state=tk.DISABLED)
 
 
-  def appendMessage(self, message_tuple):
+  def appendMessage(self, message):
     self.output_window.config(state=tk.NORMAL)
-    self.output_window.insert(tk.END, message_tuple + "\n")
+    self.output_window.insert(tk.END, message + "\n")
     self.output_window.config(state=tk.DISABLED)
 
 
-  def sendMessage(self, event):
+  def messageSendEventHandler(self, event):
     message = self.input_window.get(1.0, tk.END).strip()
     print "Sending message: '%s'" % message
     self.input_window.delete(1.0, tk.END)
     self.input_window_chars = 0
     self.controller.sendMessage(message)
 
-  def limitInputSize(self, event):
+  def messageLimitSizeHandler(self, event):
     print "Testing limiting"
     message = self.input_window.get(1.0, tk.END).strip()
     chars_in = len(message)
@@ -72,10 +73,10 @@ class TKChatClient(tk.Frame):
     self.input_window_chars = len(initial_input_text)
     self.input_window = tk.Text(self, height=5)
     self.input_window.insert(tk.END, initial_input_text)
-    self.input_window.bind("<Return>", self.sendMessage)
+    self.input_window.bind("<Return>", self.messageSendEventHandler)
     # Boilerplate for the <<Modified>> virtual event
     self.input_window.tk.call(self.input_window._w, 'edit', 'modified', 0)
-    self.input_window.bind("<<Modified>>", self.limitInputSize)
+    self.input_window.bind("<<Modified>>", self.messageLimitSizeHandler)
     self.input_window.grid()
 
     self.users_window = tk.Text(self, height=5)
@@ -85,6 +86,9 @@ class TKChatClient(tk.Frame):
 
 # Main method
 if __name__ == "__main__":
+  if len(sys.argv) < 2:
+    print "Username required as a command line parameter."
+    sys.exit()
   name = sys.argv[1]
   controller = ChatClientController(name)
 
