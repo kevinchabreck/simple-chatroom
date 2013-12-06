@@ -1,3 +1,4 @@
+#!/usr/bin/python
 
 from twisted.internet import reactor
 from autobahn.websocket import WebSocketServerFactory, WebSocketServerProtocol, listenWS

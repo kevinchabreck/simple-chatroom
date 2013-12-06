@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # Tcp Chat server
 
 import socket, select, json, sys
