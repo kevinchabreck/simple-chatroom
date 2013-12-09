@@ -75,7 +75,51 @@ function init(container, width, height) {
 	* Canvas, chat box, and reset button event handlers
 	**************************************************************************/
 
-	canvas.node.onmousemove = function(e) {
+	function drawstart(x, y){
+		oldX = x;
+		oldY = y;
+		canvas.isDrawing = true;
+	}
+	
+	function drawline(x, y){
+		if(canvas.isDrawing){
+			ws.send('PAINT:'+oldX+' '+oldY+' '+x+' '+y+' '+linewidth+' '+fillColor);
+			oldX = x;
+			oldY = y;
+		}
+	}
+
+	function drawend(){
+		canvas.isDrawing = false;
+	}
+
+
+	canvas.node.onmousemove = function(e) { 
+		var x = e.pageX - this.offsetLeft;
+		var y = e.pageY - this.offsetTop;
+		drawline(x, y)
+	};
+	canvas.node.onmousedown = function(e) { 
+		var x = e.pageX - this.offsetLeft;
+		var y = e.pageY - this.offsetTop;
+		drawstart(x,y); 
+	};
+	canvas.node.onmouseup = function(e) { drawend(); };
+	
+	canvas.node.ontouchmove = function(e){ 
+		var x = e.pageX - this.offsetLeft;
+		var y = e.pageY - this.offsetTop;
+		drawline(x, y)
+	};
+	canvas.node.ontouchstart = function(e){ 
+		var x = e.pageX - this.offsetLeft;
+		var y = e.pageY - this.offsetTop;
+		drawstart(x,y);
+	};
+	canvas.node.ontouchend = function(e){ drawend(); };
+
+	/*
+	canvas.node.onmousemove = function(e) { 
 		if(canvas.isDrawing){
 			var newX = e.pageX - this.offsetLeft;
 			var newY = e.pageY - this.offsetTop;
@@ -90,9 +134,10 @@ function init(container, width, height) {
 		oldY = e.pageY - this.offsetTop;
 		canvas.isDrawing = true;
 	};
-	
+
 	canvas.node.onmouseup = function(e) { canvas.isDrawing = false; };
-	
+	*/
+
 	resetButton.node.onclick = function(e) { 
 		ws.send('RESET:'); 
 		$(resetButton.node).blur();
